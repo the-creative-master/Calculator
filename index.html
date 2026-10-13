@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Calculator</title>
+  <meta name="description" content="A clean, fast calculator.">
+  <!-- YouTube's embedded player needs to see this site's origin as the referrer, or it shows "Error 153". -->
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="theme-color" content="#0b0c0f">
+  <meta name="color-scheme" content="dark light">
+  <meta name="apple-mobile-web-app-title" content="Calculator">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- Icon sprite -->
+  <svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+    <symbol id="i-backspace" viewBox="0 0 24 24"><path d="M20 5H9l-7 7 7 7h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/><path d="m18 9-6 6M12 9l6 6"/></symbol>
+    <symbol id="i-percent" viewBox="0 0 24 24"><path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></symbol>
+    <symbol id="i-divide" viewBox="0 0 24 24"><path d="M5 12h14"/><circle cx="12" cy="6" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="18" r="1.6" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-times" viewBox="0 0 24 24"><path d="m6.5 6.5 11 11M17.5 6.5l-11 11"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-equals" viewBox="0 0 24 24"><path d="M5 9h14M5 15h14"/></symbol>
+    <symbol id="i-plusminus" viewBox="0 0 24 24"><path d="M12 3.5v9M7.5 8h9M7.5 19h9"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="i-clipboard" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.9v14.2a1.1 1.1 0 0 0 1.68.93l11.3-7.1a1.1 1.1 0 0 0 0-1.86L8.68 3.97A1.1 1.1 0 0 0 7 4.9z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-playlist" viewBox="0 0 24 24"><path d="M12 12H3M16 6H3M12 18H3"/><path d="m16 12 5 3-5 3v-6z"/></symbol>
+  </svg>
+
+  <!-- ============================ Calculator ============================ -->
+  <main class="calc-screen" id="calc-screen">
+    <section class="calc" aria-label="Calculator">
+      <header class="calc__bar">
+        <span class="calc__title">Calculator</span>
+        <button class="theme-toggle" id="theme-toggle" type="button" role="switch" aria-checked="false" aria-label="Light mode" title="Light mode">
+          <span class="theme-toggle__track" aria-hidden="true">
+            <span class="theme-toggle__thumb"></span>
+            <svg class="icon theme-toggle__icon theme-toggle__icon--moon"><use href="#i-moon"/></svg>
+            <svg class="icon theme-toggle__icon theme-toggle__icon--sun"><use href="#i-sun"/></svg>
+          </span>
+        </button>
+      </header>
+
+      <div class="display">
+        <div class="display__history" id="display-history"></div>
+        <div class="display__main" id="display-main" role="status" aria-live="polite" aria-atomic="true">0</div>
+        <div class="display__preview" id="display-preview" aria-hidden="true"></div>
+      </div>
+
+      <div class="keypad" id="keypad">
+        <button class="key key--fn" type="button" data-action="clear" aria-label="All clear">AC</button>
+        <button class="key key--fn" type="button" data-action="backspace" aria-label="Backspace"><svg class="icon" aria-hidden="true"><use href="#i-backspace"/></svg></button>
+        <button class="key key--fn" type="button" data-action="percent" aria-label="Percent"><svg class="icon" aria-hidden="true"><use href="#i-percent"/></svg></button>
+        <button class="key key--op" type="button" data-action="operator" data-value="/" aria-label="Divide"><svg class="icon" aria-hidden="true"><use href="#i-divide"/></svg></button>
+
+        <button class="key" type="button" data-action="digit" data-value="7">7</button>
+        <button class="key" type="button" data-action="digit" data-value="8">8</button>
+        <button class="key" type="button" data-action="digit" data-value="9">9</button>
+        <button class="key key--op" type="button" data-action="operator" data-value="*" aria-label="Multiply"><svg class="icon" aria-hidden="true"><use href="#i-times"/></svg></button>
+
+        <button class="key" type="button" data-action="digit" data-value="4">4</button>
+        <button class="key" type="button" data-action="digit" data-value="5">5</button>
+        <button class="key" type="button" data-action="digit" data-value="6">6</button>
+        <button class="key key--op" type="button" data-action="operator" data-value="-" aria-label="Minus"><svg class="icon" aria-hidden="true"><use href="#i-minus"/></svg></button>
+
+        <button class="key" type="button" data-action="digit" data-value="1">1</button>
+        <button class="key" type="button" data-action="digit" data-value="2">2</button>
+        <button class="key" type="button" data-action="digit" data-value="3">3</button>
+        <button class="key key--op" type="button" data-action="operator" data-value="+" aria-label="Plus"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button>
+
+        <button class="key" type="button" data-action="negate" aria-label="Plus or minus"><svg class="icon" aria-hidden="true"><use href="#i-plusminus"/></svg></button>
+        <button class="key" type="button" data-action="digit" data-value="0">0</button>
+        <button class="key key--dot" type="button" data-action="decimal" aria-label="Decimal point">.</button>
+        <button class="key key--eq" type="button" data-action="equals" aria-label="Equals"><svg class="icon" aria-hidden="true"><use href="#i-equals"/></svg></button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================= TubeVault ============================= -->
+  <section class="vault" id="vault" aria-label="TubeVault" hidden inert>
+    <header class="vault__bar">
+      <div class="vault__brand">
+        <svg class="vault__logo" viewBox="0 0 40 40" aria-hidden="true">
+          <defs>
+            <linearGradient id="vault-logo-gradient" x1="4" y1="2" x2="36" y2="38" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#ff4566"/>
+              <stop offset="1" stop-color="#ff8a3d"/>
+            </linearGradient>
+          </defs>
+          <rect width="40" height="40" rx="12" fill="url(#vault-logo-gradient)"/>
+          <circle cx="20" cy="20" r="12.5" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width="2.2" stroke-dasharray="1.6 2.76"/>
+          <path d="M16.8 14.5v11a1 1 0 0 0 1.53.85l8.75-5.5a1 1 0 0 0 0-1.7l-8.75-5.5a1 1 0 0 0-1.53.85z" fill="#fff"/>
+        </svg>
+        <span class="vault__name">Tube<b>Vault</b></span>
+      </div>
+      <div class="vault__actions">
+        <label class="vault-switch" title="Private mode plays videos through youtube-nocookie.com, so they stay out of your YouTube watch history.">
+          <input class="vault-switch__input" id="vault-private" type="checkbox" checked>
+          <span class="vault-switch__track" aria-hidden="true"><span class="vault-switch__thumb"></span></span>
+          <span class="vault-switch__text">Private</span>
+        </label>
+        <button class="vault-lock" id="vault-lock" type="button" title="Back to the calculator (Esc)">
+          <svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>
+          <span>Lock</span>
+          <kbd>Esc</kbd>
+        </button>
+      </div>
+    </header>
+
+    <div class="vault__body">
+      <div class="vault-hero">
+        <h1 class="vault-hero__title">What are we watching?</h1>
+        <p class="vault-hero__sub">Paste a YouTube link and it plays right here.</p>
+      </div>
+
+      <form class="vault-search" id="vault-form" autocomplete="off" novalidate>
+        <label class="visually-hidden" for="vault-input">YouTube link</label>
+        <div class="vault-search__field" id="vault-field">
+          <svg class="icon vault-search__icon" aria-hidden="true"><use href="#i-link"/></svg>
+          <input class="vault-search__input" id="vault-input" type="text" inputmode="url" placeholder="Paste a YouTube link…" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" enterkeyhint="go">
+          <button class="vault-btn vault-btn--ghost" id="vault-paste" type="button" title="Paste from clipboard">
+            <svg class="icon" aria-hidden="true"><use href="#i-clipboard"/></svg><span>Paste</span>
+          </button>
+          <button class="vault-btn vault-btn--primary" type="submit">
+            <svg class="icon" aria-hidden="true"><use href="#i-play"/></svg><span>Play</span>
+          </button>
+        </div>
+        <p class="vault-search__msg" id="vault-msg" role="status" aria-live="polite"></p>
+      </form>
+
+      <section class="vault-player" aria-label="Player">
+        <div class="vault-player__stage" id="vault-stage">
+          <div class="vault-player__empty" id="vault-empty">
+            <span class="vault-player__orb" aria-hidden="true"><svg class="icon"><use href="#i-play"/></svg></span>
+            <p class="vault-player__empty-title">Nothing playing yet</p>
+            <p class="vault-player__empty-text">Videos, Shorts, playlists and links with timestamps all work.</p>
+          </div>
+        </div>
+
+        <div class="vault-now" id="vault-now" hidden>
+          <div class="vault-now__info">
+            <span class="vault-now__label">Now playing</span>
+            <span class="vault-now__title" id="vault-now-title"></span>
+            <span class="vault-now__tags" id="vault-now-tags"></span>
+          </div>
+          <div class="vault-now__actions">
+            <button class="vault-icon-btn" id="vault-copy" type="button" title="Copy link" aria-label="Copy link">
+              <svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>
+            </button>
+            <a class="vault-icon-btn" id="vault-open" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" title="Open on YouTube" aria-label="Open on YouTube">
+              <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg>
+            </a>
+            <button class="vault-icon-btn" id="vault-stop" type="button" title="Close video" aria-label="Close video">
+              <svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="vault-recent" id="vault-recent" aria-labelledby="vault-recent-title" hidden>
+        <div class="vault-recent__head">
+          <h2 class="vault-recent__title" id="vault-recent-title">Recently played</h2>
+          <button class="vault-text-btn" id="vault-clear" type="button">Clear</button>
+        </div>
+        <ul class="vault-recent__grid" id="vault-recent-grid"></ul>
+      </section>
+    </div>
+
+    <div class="vault-toast" id="vault-toast" role="status" aria-live="polite"></div>
+  </section>
+
+  <script src="js/calculator.js"></script>
+  <script src="js/youtube.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
