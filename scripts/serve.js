@@ -53,7 +53,8 @@ const server = http.createServer((req, res) => {
     if (error) return send(res, 404, 'Not found');
     res.writeHead(200, {
       'Content-Type': TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream',
-      'Cache-Control': 'no-cache',
+      // A dev server: never let the browser (or a proxy) keep a copy that could go stale mid-edit.
+      'Cache-Control': 'no-store',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
     });
     res.end(req.method === 'HEAD' ? undefined : data);

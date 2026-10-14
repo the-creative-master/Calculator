@@ -8,6 +8,7 @@
 
   const { Calculator } = window.CalcEngine;
   const YT = window.TubeVaultYT;
+  const Library = window.TubeVaultLibrary;
 
   const $ = (selector) => document.querySelector(selector);
   const html = document.documentElement;
@@ -65,6 +66,19 @@
     if (event.detail > 0) themeToggle.blur(); // pointer click: keep Enter meaning "="
   });
 
+  // While the reveal plays, the browser sends every tap to <html> (the transition sits on top
+  // of the page), so quick taps on the keys would be lost. Hand them to the button underneath.
+  document.addEventListener('click', (event) => {
+    if (event.target !== html || !html.classList.contains('is-theme-switching')) return;
+    const button = Array.from(calcScreen.querySelectorAll('button')).find((node) => {
+      const rect = node.getBoundingClientRect();
+      return event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
+    });
+    if (!button) return;
+    if (button.classList.contains('key')) flash(button);
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: event.detail || 1, clientX: event.clientX, clientY: event.clientY }));
+  });
+
   applyTheme('dark');
 
   /* ====================================================================== *
@@ -77,7 +91,7 @@
     preview: $('#display-preview'),
   };
   const keypad = $('#keypad');
-  const vault = createVault();
+  const vault = startVault();
 
   function render() {
     display.history.textContent = calc.history;
@@ -114,7 +128,7 @@
         calc.inputDecimal();
         break;
       case 'operator':
-        if (value === '+' && isLight() && calc.entry === SECRET_ENTRY) {
+        if (value === '+' && vault.available && isLight() && calc.entry === SECRET_ENTRY) {
           calc.clear();
           render();
           vault.open(source || keyButton('operator', '+'));
@@ -204,9 +218,38 @@
    * TubeVault: a private player that looks like YouTube and plays YouTube's
    * own embedded player.
    * ====================================================================== */
+  /**
+   * TubeVault must never take the calculator down with it. If it can't start (say the browser
+   * cached an old copy of one file but not the others), the calculator works without the secret.
+   */
+  function startVault() {
+    try {
+      return createVault();
+    } catch (error) {
+      console.error('TubeVault could not start, so the calculator is running without it:', error);
+      return { available: false, isOpen: false, open() {}, close() {} };
+    }
+  }
+
   function createVault() {
+    // Check everything TubeVault needs before touching the page, so a mismatch fails cleanly here.
+    const YT_NEEDS = ['parse', 'embedOrigin', 'embedUrl', 'watchUrl', 'thumbnailUrl', 'formatTime', 'timeAgo', 'readPlayerMessage', 'historyKey', 'sanitizeHistory'];
+    const LIBRARY_NEEDS = [
+      'sanitizeLibrary', 'getPlaylist', 'customPlaylists', 'isBuiltIn', 'has', 'addItem', 'removeItem', 'restoreItem', 'moveItem',
+      'createPlaylist', 'renamePlaylist', 'deletePlaylist', 'restorePlaylist', 'applyDetails', 'updateDetails', 'findDetails',
+      'sanitizeProgress', 'progressFor', 'recordProgress', 'resumeTime', 'watchedFraction', 'makeBackup', 'readBackup', 'mergeBackup',
+    ];
+    const missingHelpers = YT_NEEDS.filter((name) => !YT || typeof YT[name] !== 'function');
+    if (missingHelpers.length) throw new Error(`js/youtube.js is missing or out of date (no ${missingHelpers.join(', ')})`);
+    const missingLibrary = LIBRARY_NEEDS.filter((name) => !Library || typeof Library[name] !== 'function');
+    if (missingLibrary.length) throw new Error(`js/library.js is missing or out of date (no ${missingLibrary.join(', ')})`);
     const root = $('#vault');
-    const find = (selector) => root.querySelector(selector);
+    if (!root) throw new Error('index.html has no #vault section');
+    const find = (selector) => {
+      const node = root.querySelector(selector);
+      if (!node) throw new Error(`index.html is missing ${selector}, so it doesn't match js/app.js`);
+      return node;
+    };
     const findAll = (selector) => Array.from(root.querySelectorAll(selector));
 
     const masthead = find('#vault-masthead');
@@ -223,29 +266,77 @@
     const menuAppearance = find('#vault-menu-appearance');
     const guide = find('#vault-guide');
     const guideButton = find('#vault-guide-btn');
+    const guidePlaylists = find('#vault-guide-playlists');
     const homeView = find('#vault-home');
     const chipBar = find('#vault-chips');
     const feed = find('#vault-feed');
     const feedNote = find('#vault-feed-note');
     const emptyState = find('#vault-empty');
+    const libraryView = find('#vault-library');
+    const libHistory = find('#vault-lib-history');
+    const libHistoryEmpty = find('#vault-lib-history-empty');
+    const libPlaylists = find('#vault-lib-playlists');
+    const importFile = find('#vault-import-file');
+    const playlistView = find('#vault-playlist');
+    const plBg = find('#vault-pl-bg');
+    const plThumb = find('#vault-pl-thumb');
+    const plTitle = find('#vault-pl-title');
+    const plMeta = find('#vault-pl-meta');
+    const plTools = find('#vault-pl-tools');
+    const plPlay = find('.yt-plhero__play');
+    const plItems = find('#vault-pl-items');
+    const plEmpty = find('#vault-pl-empty');
+    const plEmptyText = find('#vault-pl-empty-text');
     const watchView = find('#vault-watch');
     const stage = find('#vault-stage');
     const titleEl = find('#vault-title');
+    const owner = find('.yt-owner');
     const avatarEl = find('#vault-avatar');
     const channelEl = find('#vault-channel');
     const channelSubEl = find('#vault-channel-sub');
     const openLink = find('#vault-open');
+    const likeButton = find('#vault-like');
+    const saveButton = find('#vault-save-btn');
+    const fullscreenButton = find('#vault-fs-btn');
+    const desc = find('.yt-desc');
     const descMeta = find('#vault-desc-meta');
     const descLink = find('#vault-desc-link');
     const descNote = find('#vault-desc-note');
+    const secondary = find('.yt-watch__secondary');
+    const queuePanel = find('#vault-queue');
+    const queueTitle = find('#vault-queue-title');
+    const queueSub = find('#vault-queue-sub');
+    const queueNext = find('#vault-queue-next');
+    const queueList = find('#vault-queue-items');
     const upNext = find('#vault-upnext');
     const upNextNote = find('#vault-upnext-note');
+    const fullWindowBar = find('#vault-fwbar');
+    const fullWindowTitle = find('#vault-fwbar-title');
+    const popup = find('#vault-popup');
+    const popupBackdrop = find('#vault-popup-backdrop');
+    const dialogScrim = find('#vault-dialog-scrim');
+    const saveDialog = find('#vault-save');
+    const saveTitle = find('#vault-save-title');
+    const saveList = find('#vault-save-list');
+    const saveNew = find('#vault-save-new');
+    const saveForm = find('#vault-save-form');
+    const saveName = find('#vault-save-name');
+    const saveCount = find('#vault-save-count');
+    const saveCreate = find('#vault-save-create');
+    const nameDialog = find('#vault-name');
+    const nameForm = find('#vault-name-form');
+    const nameTitle = find('#vault-name-title');
+    const nameInput = find('#vault-name-input');
+    const nameCount = find('#vault-name-count');
+    const nameOk = find('#vault-name-ok');
     const toast = find('#vault-toast');
     const toastText = find('#vault-toast-text');
     const toastAction = find('#vault-toast-action');
 
     const RECENT_KEY = 'tubevault:recent';
     const SETTINGS_KEY = 'tubevault:settings';
+    const LIBRARY_KEY = 'tubevault:library';
+    const PROGRESS_KEY = 'tubevault:progress';
     const MAX_RECENT = 24;
     const SVG_NS = 'http://www.w3.org/2000/svg';
     const ERRORS = {
@@ -263,12 +354,24 @@
       150: "The owner doesn't allow this video to play outside YouTube",
       153: 'YouTube blocked the player. Open TubeVault from a web address, not a file',
     };
+    const IMPORT_ERRORS = {
+      'not-json': "That file isn't a TubeVault backup",
+      'not-backup': "That file isn't a TubeVault backup",
+      'too-big': 'That file is too big to be a TubeVault backup',
+      newer: 'That backup is from a newer TubeVault. Reload the page and try again',
+    };
     const APPEARANCE_LABELS = { device: 'Device theme', dark: 'Dark', light: 'Light' };
     const FILTER_EMPTY = {
       videos: 'Videos you watch will show up here.',
       shorts: 'Shorts you watch will show up here.',
       playlists: 'Playlists you watch will show up here.',
     };
+    const PLAYLIST_EMPTY = {
+      WL: 'Save videos for later with the Save button under a video, or from the ⋮ menu on any video.',
+      LL: 'Videos you like will show up here. Use the Like button under a video.',
+      custom: 'Add videos with the Save button under a video, or from the ⋮ menu on any video.',
+    };
+    const PLAYLIST_ICONS = { WL: 'clock', LL: 'like' };
     const AVATAR_COLORS = ['#ef6c00', '#c2185b', '#7b1fa2', '#512da8', '#1976d2', '#0097a7', '#00796b', '#388e3c', '#5d4037', '#455a64', '#d84315', '#303f9f'];
     const PASTE_HINT = finePointer.matches
       ? `paste with ${/Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent) ? '⌘V' : 'Ctrl+V'}`
@@ -282,11 +385,16 @@
       appearance: Object.prototype.hasOwnProperty.call(APPEARANCE_LABELS, saved.appearance) ? saved.appearance : 'device',
     };
     let recent = YT.sanitizeHistory(readJSON(RECENT_KEY, []), MAX_RECENT);
+    let library = Library.sanitizeLibrary(readJSON(LIBRARY_KEY, null));
+    let progress = Library.sanitizeProgress(readJSON(PROGRESS_KEY, null));
 
     let isOpen = false;
+    let view = 'home'; // the page under the player: 'home', 'library' or 'playlist'
+    let shownPlaylist = null; // which playlist the playlist page shows
     let current = null; // what's on the watch page: { id, list, start, short }
-    let live = {}; // what the player has told us about it: { videoId, title, author, duration, live, currentTime, playlistCount }
+    let live = {}; // what the player has told us about it: { videoId, title, author, duration, live, currentTime, state, playlistCount, playlistIndex }
     let player = null; // { frame, origin, widgetId, connected, timer, tries }
+    let queue = null; // playing one of your playlists: { playlistId, name, items, index, shuffled }
     let widgetCount = 0;
     let filter = 'all';
     let closeTimer = 0;
@@ -294,6 +402,16 @@
     let messageTimer = 0;
     let toastHandler = null;
     let skipNextPop = false;
+    let saveTarget = null; // the video the Save dialog is for
+    let nameHandler = null; // what the name dialog does with the name you type
+    let dialogReturn = null; // where focus goes back to when a dialog closes
+    let popupAnchor = null; // the ⋮ button the open menu belongs to
+    let progressTimer = 0;
+    let progressDirty = false;
+    let advanceTimer = 0;
+    let fullWindow = false;
+    let fullWindowExplained = false;
+    let lastFullscreenExit = 0;
 
     applyAppearance();
     applyPrivacy();
@@ -322,7 +440,7 @@
       root.scrollTop = 0;
 
       render();
-      if (current) mount(current, false); // back to what you were watching, paused
+      if (current) mount(current, false, resumePoint(current)); // back where you were, paused
 
       // The browser/phone Back button closes TubeVault instead of leaving the page.
       try {
@@ -333,7 +451,7 @@
 
       if (finePointer.matches) {
         setTimeout(() => {
-          if (isOpen) input.focus({ preventScroll: true });
+          if (isOpen && !isDialogOpen()) input.focus({ preventScroll: true });
         }, reducedMotion.matches ? 0 : 450);
       }
     }
@@ -341,8 +459,9 @@
     function close(options = {}) {
       if (!isOpen) return;
       isOpen = false;
-      unmount(); // stop playback right away
-      closeMenus();
+      exitFullscreen();
+      unmount(); // stop playback right away (and save how far you got)
+      closeOverlays();
       closeSearch();
       clearSearchError();
 
@@ -383,17 +502,70 @@
       }
     }
 
+    /* ------------------------------ navigation ---------------------------- */
+
+    /** Goes to Home, You or a playlist page (stopping any video). */
+    function showView(next, playlistId) {
+      closeOverlays();
+      leaveWatchPage();
+      view = next;
+      shownPlaylist = next === 'playlist' ? playlistId : null;
+      if (next === 'playlist' && !Library.getPlaylist(library, playlistId)) {
+        view = 'library';
+        shownPlaylist = null;
+      }
+      render();
+      root.scrollTo({ top: 0 });
+    }
+
+    /** The ✕ under the player: back to whichever page you were on. */
+    function closeVideo() {
+      closeOverlays();
+      leaveWatchPage();
+      render();
+      root.scrollTo({ top: 0 });
+    }
+
+    function leaveWatchPage() {
+      if (!current) return;
+      exitFullscreen();
+      unmount();
+      current = null;
+      live = {};
+      queue = null;
+    }
+
     /* ------------------------------ rendering ----------------------------- */
 
     function render() {
       const watching = Boolean(current);
       root.classList.toggle('is-watching', watching);
-      homeView.hidden = watching;
+      homeView.hidden = watching || view !== 'home';
+      libraryView.hidden = watching || view !== 'library';
+      playlistView.hidden = watching || view !== 'playlist';
       watchView.hidden = !watching;
-      findAll('[data-vault-action="home"]').forEach((item) => item.classList.toggle('is-active', !watching));
+      renderGuide();
+      findAll('[data-nav]').forEach((item) => {
+        const nav = item.dataset.nav;
+        let active = false;
+        if (!watching && view === 'playlist') {
+          // A playlist page lights up its own entry in the menu, and "You" in the mini guide.
+          active = nav === shownPlaylist || (nav === 'library' && item.classList.contains('yt-rail__item'));
+        } else if (!watching) {
+          active = nav === view;
+        }
+        item.classList.toggle('is-active', active);
+        if (active) item.setAttribute('aria-current', 'page');
+        else item.removeAttribute('aria-current');
+      });
       if (watching) {
         renderWatchInfo();
+        renderQueue();
         renderUpNext();
+      } else if (view === 'library') {
+        renderLibrary();
+      } else if (view === 'playlist') {
+        renderPlaylist();
       } else {
         renderHome();
       }
@@ -411,7 +583,7 @@
       }
       findAll('[data-filter]').forEach((chip) => chip.setAttribute('aria-pressed', String(chip.dataset.filter === filter)));
       const items = recent.filter(matchesFilter);
-      feed.replaceChildren(...items.map((item) => videoCard(item, false)));
+      feed.replaceChildren(...items.map((item) => videoCard(item, 'feed')));
       if (!items.length) {
         feedNote.textContent = FILTER_EMPTY[filter] || '';
         feedNote.hidden = false;
@@ -425,11 +597,120 @@
       return true;
     }
 
+    /** Your playlists in the side menu, and how many videos the built-in ones hold. */
+    function renderGuide() {
+      guidePlaylists.replaceChildren(
+        ...Library.customPlaylists(library).map((playlist) => {
+          const item = el('button', 'yt-guide__item');
+          item.type = 'button';
+          item.dataset.vaultAction = 'playlist';
+          item.dataset.playlist = playlist.id;
+          item.dataset.nav = playlist.id;
+          const name = el('span', 'yt-guide__label', playlist.name);
+          name.dir = 'auto';
+          item.append(icon('playlist'), name);
+          return item;
+        }),
+      );
+      findAll('[data-count]').forEach((node) => {
+        const playlist = Library.getPlaylist(library, node.dataset.count);
+        node.textContent = playlist && playlist.items.length ? String(playlist.items.length) : '';
+      });
+    }
+
+    function renderLibrary() {
+      const items = recent.slice(0, 12);
+      libHistory.replaceChildren(...items.map((item) => videoCard(item, 'shelf')));
+      libHistory.hidden = items.length === 0;
+      libHistoryEmpty.hidden = items.length > 0;
+      libPlaylists.replaceChildren(...library.playlists.map(playlistCard));
+    }
+
+    function playlistCard(playlist) {
+      const count = playlist.items.length;
+      const card = el('li', 'yt-plcard');
+      const button = el('button', 'yt-plcard__thumb');
+      button.type = 'button';
+      button.setAttribute('aria-label', `${playlist.name}, ${videoCount(count)}`);
+      const stack = el('span', 'yt-plcard__stack');
+      const cover = coverFor(playlist, true);
+      const badge = el('span', 'yt-thumb__badge');
+      badge.append(icon('playlist'), document.createTextNode(videoCount(count)));
+      cover.append(badge);
+      stack.append(cover);
+      button.append(stack);
+      const title = el('h3', 'yt-plcard__title', playlist.name);
+      title.dir = 'auto';
+      const meta = el('p', 'yt-plcard__meta', count ? `Updated ${YT.timeAgo(playlist.updated)}` : 'No videos yet');
+      card.append(button, title, meta, el('p', 'yt-plcard__link', 'View full playlist'));
+      card.addEventListener('click', () => showView('playlist', playlist.id));
+      return card;
+    }
+
+    /** A playlist's picture: its top video's thumbnail, or an icon while it's empty. */
+    function coverFor(playlist, small) {
+      const first = playlist.items[0];
+      if (first) return thumbnail(first, { small, badge: false, progress: false });
+      const box = el('span', 'yt-thumb');
+      box.append(placeholder(null, PLAYLIST_ICONS[playlist.id] || 'playlist'));
+      return box;
+    }
+
+    function renderPlaylist() {
+      const playlist = Library.getPlaylist(library, shownPlaylist);
+      if (!playlist) {
+        // Deleted (maybe in another tab): fall back to the You page.
+        view = 'library';
+        shownPlaylist = null;
+        render();
+        return;
+      }
+      const items = playlist.items;
+      const first = items[0];
+      const coverId = first ? first.id || first.thumb : null;
+      plBg.style.backgroundImage = coverId ? `url("${YT.thumbnailUrl(coverId, 'mqdefault')}")` : '';
+      plThumb.replaceChildren(coverFor(playlist, false));
+      plThumb.disabled = items.length === 0;
+      plTitle.textContent = playlist.name;
+      plMeta.replaceChildren(
+        el('strong', '', 'Playlist'),
+        el('br'),
+        document.createTextNode(items.length ? `${videoCount(items.length)} · Updated ${YT.timeAgo(playlist.updated)}` : 'No videos yet'),
+      );
+      plTools.hidden = Library.isBuiltIn(playlist.id);
+      plPlay.querySelectorAll('button').forEach((button) => {
+        button.disabled = items.length === 0;
+      });
+      plItems.replaceChildren(...items.map((item, index) => playlistRow(playlist, item, index)));
+      plEmpty.hidden = items.length > 0;
+      plEmptyText.textContent = PLAYLIST_EMPTY[playlist.id] || PLAYLIST_EMPTY.custom;
+    }
+
+    function playlistRow(playlist, item, index) {
+      const label = displayTitle(item);
+      const row = el('li', 'yt-plitem');
+      const thumbButton = el('button', 'yt-plitem__thumb');
+      thumbButton.type = 'button';
+      thumbButton.setAttribute('aria-label', `Play ${label}`);
+      thumbButton.append(thumbnail(item, { small: true }));
+      const text = el('div', 'yt-plitem__text');
+      const title = el('h3', 'yt-plitem__title', label);
+      title.dir = 'auto';
+      title.title = label;
+      const meta = el('p', 'yt-plitem__meta', channelLine(item));
+      meta.dir = 'auto';
+      text.append(title, meta);
+      row.append(el('span', 'yt-plitem__index', String(index + 1)), thumbButton, text, menuButton(item, label, { from: 'playlist', playlistId: playlist.id }));
+      row.addEventListener('click', () => startQueue(playlist.id, index, false));
+      return row;
+    }
+
     function renderWatchInfo() {
       if (!current) return;
       const entry = findEntry(current) || {};
       const author = live.author || (sameVideoAsEntry() ? entry.author : '') || '';
       titleEl.textContent = live.title || entry.title || fallbackTitle(current);
+      fullWindowTitle.textContent = titleEl.textContent;
       channelEl.textContent = author || fallbackChannel(current);
       setAvatar(avatarEl, author);
       channelSubEl.textContent = settings.privacy ? 'Watching in private mode' : 'Watching on youtube.com';
@@ -451,26 +732,75 @@
       descNote.textContent = settings.privacy
         ? "Playing with YouTube's privacy-enhanced player (youtube-nocookie.com)."
         : 'Playing with the regular YouTube player (youtube.com).';
+      renderWatchActions();
+    }
+
+    function renderWatchActions() {
+      const isVideo = Boolean(current && current.id);
+      const liked = isVideo && Library.has(library, Library.LIKED, current);
+      likeButton.hidden = !isVideo;
+      likeButton.setAttribute('aria-pressed', String(liked));
+      likeButton.title = liked ? 'Unlike' : 'I like this';
+      likeButton.querySelector('span').textContent = liked ? 'Liked' : 'Like';
+      saveButton.title = isVideo ? 'Save to a playlist' : 'Save this playlist';
+      syncFullscreenButton();
+    }
+
+    function renderQueue() {
+      queuePanel.hidden = !queue;
+      if (!queue) {
+        queueList.replaceChildren();
+        return;
+      }
+      queueTitle.textContent = queue.name;
+      queueSub.textContent = `${queue.shuffled ? 'Shuffled · ' : ''}${queue.index + 1} / ${queue.items.length}`;
+      queueNext.disabled = queue.index >= queue.items.length - 1;
+      queueList.replaceChildren(...queue.items.map(queueRow));
+      const row = queueList.children[queue.index];
+      if (row) queueList.scrollTop = Math.max(0, row.offsetTop - 8);
+    }
+
+    function queueRow(item, index) {
+      const isCurrent = index === queue.index;
+      const row = el('li', isCurrent ? 'yt-qitem is-current' : 'yt-qitem');
+      const button = el('button', 'yt-qitem__button');
+      button.type = 'button';
+      if (isCurrent) button.setAttribute('aria-current', 'true');
+      const marker = el('span', 'yt-qitem__index');
+      if (isCurrent) marker.append(icon('play'));
+      else marker.textContent = String(index + 1);
+      const text = el('span', 'yt-qitem__text');
+      const title = el('span', 'yt-qitem__title', displayTitle(item));
+      title.dir = 'auto';
+      const channel = el('span', 'yt-qitem__channel', channelLine(item));
+      channel.dir = 'auto';
+      text.append(title, channel);
+      button.append(marker, thumbnail(item, { small: true }), text);
+      button.addEventListener('click', () => {
+        if (queue && index !== queue.index) playQueueItem(index);
+      });
+      row.append(button);
+      return row;
     }
 
     function renderUpNext() {
       const key = current ? YT.historyKey(current) : '';
       const items = recent.filter((item) => YT.historyKey(item) !== key);
-      upNext.replaceChildren(...items.map((item) => videoCard(item, true)));
+      upNext.replaceChildren(...items.map((item) => videoCard(item, 'compact')));
       upNextNote.hidden = items.length > 0;
     }
 
-    function videoCard(item, isCompact) {
+    function videoCard(item, variant) {
       const label = displayTitle(item);
-      const card = el('li', isCompact ? 'yt-card yt-card--compact' : 'yt-card');
+      const card = el('li', `yt-card yt-card--${variant}`);
 
       const thumbButton = el('button', 'yt-card__thumb');
       thumbButton.type = 'button';
       thumbButton.setAttribute('aria-label', `Play ${label}`);
-      thumbButton.append(thumbnail(item, isCompact));
+      thumbButton.append(thumbnail(item, { small: variant !== 'feed' }));
 
       const body = el('div', 'yt-card__body');
-      if (!isCompact) {
+      if (variant === 'feed') {
         const avatar = el('span', 'yt-avatar');
         avatar.setAttribute('aria-hidden', 'true');
         setAvatar(avatar, item.author);
@@ -484,23 +814,31 @@
       channel.dir = 'auto';
       text.append(title, channel, el('p', 'yt-card__meta', metaLine(item)));
 
-      const remove = el('button', 'yt-card__remove');
-      remove.type = 'button';
-      remove.title = 'Remove from watch history';
-      remove.setAttribute('aria-label', `Remove ${label} from watch history`);
-      remove.append(icon('x'));
-      remove.addEventListener('click', (event) => {
-        event.stopPropagation();
-        removeRecent(YT.historyKey(item));
-      });
-
-      body.append(text, remove);
+      body.append(text, menuButton(item, label, { from: 'history' }));
       card.append(thumbButton, body);
       card.addEventListener('click', () => play(toVideo(item)));
       return card;
     }
 
-    function thumbnail(item, isCompact) {
+    function menuButton(item, label, context) {
+      const button = el('button', 'yt-card__menu');
+      button.type = 'button';
+      button.title = 'More actions';
+      button.setAttribute('aria-label', `More actions for ${label}`);
+      button.setAttribute('aria-controls', 'vault-popup');
+      button.setAttribute('aria-expanded', 'false');
+      // Lets focus find this button again after the list is redrawn (say, while a dialog was open).
+      button.dataset.focusKey = `${context.from}:${context.playlistId || ''}:${YT.historyKey(item)}`;
+      button.append(icon('more'));
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (popupAnchor === button) closePopup();
+        else openItemMenu(button, item, context, event.detail === 0);
+      });
+      return button;
+    }
+
+    function thumbnail(item, options = {}) {
       const box = el('span', 'yt-thumb');
       const thumbId = item.id || item.thumb;
       if (thumbId) {
@@ -509,7 +847,7 @@
         img.loading = 'lazy';
         img.decoding = 'async';
         // Big cards try the sharp HD thumbnail first, then the one every video has.
-        let quality = isCompact ? 'hqdefault' : 'hq720';
+        let quality = options.small ? 'hqdefault' : 'hq720';
         const fallBack = () => {
           if (quality === 'hq720') {
             quality = 'hqdefault';
@@ -530,14 +868,25 @@
       } else {
         box.append(placeholder(item));
       }
-      const badge = badgeFor(item);
-      if (badge) box.append(badge);
+      if (options.badge !== false) {
+        const badge = badgeFor(item);
+        if (badge) box.append(badge);
+      }
+      // The red bar: how much of it you've watched.
+      const watched = options.progress !== false && item.id ? Library.watchedFraction(Library.progressFor(progress, item.id)) : 0;
+      if (watched > 0) {
+        const bar = el('span', 'yt-thumb__progress');
+        const fill = el('span');
+        fill.style.width = `${(watched * 100).toFixed(1)}%`;
+        bar.append(fill);
+        box.append(bar);
+      }
       return box;
     }
 
-    function placeholder(item) {
+    function placeholder(item, iconName) {
       const node = el('span', 'yt-thumb__placeholder');
-      node.append(icon(item.id ? 'play' : 'playlist'));
+      node.append(icon(iconName || (item && item.id ? 'play' : 'playlist')));
       return node;
     }
 
@@ -589,6 +938,11 @@
       return parts.join(' · ');
     }
 
+    function videoCount(count) {
+      if (!count) return 'No videos';
+      return count === 1 ? '1 video' : `${count} videos`;
+    }
+
     /* ------------------------------ playback ------------------------------ */
 
     function submit() {
@@ -600,27 +954,39 @@
       play(result.video);
     }
 
-    function play(video) {
-      closeMenus();
-      closeSearch();
-      clearSearchError();
-      input.value = '';
-      syncInputClear();
+    /** Plays a video. `auto` is for the next one in a playlist: it leaves the rest of the page alone. */
+    function play(video, options = {}) {
+      if (!options.auto) {
+        closeOverlays();
+        closeSearch();
+        clearSearchError();
+        input.value = '';
+        syncInputClear();
+      }
+      if (!options.fromQueue) queue = null;
+      // Pick up where you left off, unless the link says where to start.
+      const resume = video.start > 0 ? 0 : resumePoint(video) || 0;
       addRecent(video);
-      mount(video, true);
-      root.scrollTo({ top: 0 });
-      if (!finePointer.matches) input.blur(); // put the on-screen keyboard away
+      mount(video, true, resume || undefined);
+      if (!options.auto) {
+        root.scrollTo({ top: 0 });
+        if (!finePointer.matches) input.blur(); // put the on-screen keyboard away
+      }
+      if (resume) {
+        const key = YT.historyKey(video);
+        showToast(`Resumed at ${YT.formatTime(resume)}`, {
+          label: 'Start over',
+          run: () => {
+            if (current && YT.historyKey(current) === key) mount(current, true, 0);
+          },
+        });
+      }
     }
 
-    function goHome() {
-      closeMenus();
-      if (current) {
-        unmount();
-        current = null;
-        live = {};
-      }
-      render();
-      root.scrollTo({ top: 0 });
+    /** Where to start a video you've watched part of, or undefined to use its own start time. */
+    function resumePoint(video) {
+      const time = video.id ? Library.resumeTime(Library.progressFor(progress, video.id)) : 0;
+      return time || undefined;
     }
 
     /** Puts a fresh YouTube <iframe> on the watch page. */
@@ -655,14 +1021,16 @@
     }
 
     function unmount() {
+      clearTimeout(advanceTimer);
       if (player) clearInterval(player.timer);
       player = null;
+      flushProgress();
       stage.replaceChildren();
     }
 
     /**
-     * Asks the player to report back (title, channel, duration, errors), the same handshake
-     * YouTube's own IFrame API uses. If it never answers, the page just shows the link instead.
+     * Asks the player to report back (title, channel, duration, progress, errors), the same
+     * handshake YouTube's own IFrame API uses. If it never answers, the page just shows the link.
      */
     function listenTo(state) {
       clearInterval(state.timer);
@@ -691,6 +1059,13 @@
       if (!state.connected) {
         state.connected = true;
         clearInterval(state.timer);
+        // Also ask for state changes as events, like the IFrame API does (they tell us when a video ends).
+        try {
+          const command = { event: 'command', func: 'addEventListener', args: ['onStateChange'], id: state.widgetId, channel: 'widget' };
+          state.frame.contentWindow.postMessage(JSON.stringify(command), state.origin);
+        } catch (error) {
+          /* the frame went away */
+        }
       }
       if (data.event === 'onError') {
         if (data.error !== undefined) showPlayerError(data.error);
@@ -706,8 +1081,10 @@
       if (data.videoId && current.id && !current.list && data.videoId !== current.id) return;
       // A playlist moved on to its next video: start fresh for that one.
       if (data.videoId && live.videoId && data.videoId !== live.videoId) {
-        live = { playlistCount: live.playlistCount, currentTime: live.currentTime };
+        live = { playlistCount: live.playlistCount, currentTime: live.currentTime, state: live.state };
       }
+      if (typeof data.playlistIndex === 'number') live.playlistIndex = data.playlistIndex;
+      if (typeof data.state === 'number') live.state = data.state;
       let changed = false;
       for (const field of ['videoId', 'title', 'author', 'duration', 'live', 'playlistCount']) {
         if (data[field] !== undefined && live[field] !== data[field]) {
@@ -715,9 +1092,12 @@
           changed = true;
         }
       }
+      trackProgress();
+      if (data.state === 0) handleEnded();
       if (!changed) return;
       rememberPlayerInfo();
       renderWatchInfo();
+      if (queue) renderQueue();
     }
 
     /** Is the player showing the video the history entry is about (and not, say, a later playlist video)? */
@@ -726,31 +1106,27 @@
       return live.videoId ? live.videoId === current.id : !current.list;
     }
 
-    /** Saves what the player told us into watch history, so the home page can show real titles. */
-    function rememberPlayerInfo() {
-      const entry = findEntry(current);
-      if (!entry) return;
-      const before = JSON.stringify(entry);
-      if (entry.id) {
-        if (sameVideoAsEntry()) {
-          if (live.title) entry.title = live.title;
-          if (live.author) entry.author = live.author;
-          if (live.live) {
-            entry.live = true;
-            delete entry.duration;
-          } else if (live.duration) {
-            entry.duration = live.duration;
-          }
-        }
-      } else {
-        // A playlist: the player doesn't say its name, so its first video gives the title,
-        // thumbnail and channel.
-        if (!entry.thumb && live.videoId) entry.thumb = live.videoId;
-        if (!entry.title && live.title) entry.title = live.title;
-        if (!entry.author && live.author) entry.author = live.author;
-        if (live.playlistCount) entry.count = live.playlistCount;
+    /** What the player has said about what's on screen, in the shape saved entries use. */
+    function playerDetails() {
+      if (!current) return null;
+      if (current.id) {
+        if (!sameVideoAsEntry()) return null;
+        return { title: live.title, author: live.author, duration: live.duration, live: live.live };
       }
-      if (JSON.stringify(entry) !== before) saveRecent();
+      // A playlist: the player doesn't say its name, so its first video gives the title,
+      // thumbnail and channel.
+      return { thumb: live.videoId, title: live.title, author: live.author, count: live.playlistCount };
+    }
+
+    /** Saves what the player told us into history and your playlists, so they show real titles. */
+    function rememberPlayerInfo() {
+      const details = playerDetails();
+      if (!details) return;
+      const entry = findEntry(current);
+      if (entry && Library.applyDetails(entry, details)) saveRecent();
+      if (Library.updateDetails(library, current, details)) saveLibrary();
+      const queued = queue ? queue.items[queue.index] : null;
+      if (queued && YT.historyKey(queued) === YT.historyKey(current)) Library.applyDetails(queued, details);
     }
 
     function showPlayerError(code) {
@@ -760,6 +1136,102 @@
         label: 'Open in YouTube',
         run: () => window.open(url, '_blank', 'noopener'),
       });
+    }
+
+    /* ------------------------------- progress ----------------------------- */
+
+    /** The video the player is on: for a YouTube playlist, whichever video it has reached. */
+    function playingVideoId() {
+      if (!current) return null;
+      if (current.list) return live.videoId || current.id || null;
+      return current.id;
+    }
+
+    function playingDuration() {
+      if (live.duration) return live.duration;
+      const entry = sameVideoAsEntry() ? findEntry(current) : null;
+      return entry && entry.duration ? entry.duration : 0;
+    }
+
+    /** Remembers how far you got, so the video can pick up there next time. */
+    function trackProgress() {
+      const id = playingVideoId();
+      // Only while it's actually playing or paused: before that the player reports its start time.
+      if (!id || live.live || typeof live.currentTime !== 'number' || (live.state !== 1 && live.state !== 2)) return;
+      if (Library.recordProgress(progress, id, live.currentTime, playingDuration())) scheduleProgressSave();
+    }
+
+    function scheduleProgressSave() {
+      progressDirty = true;
+      if (!progressTimer) progressTimer = setTimeout(flushProgress, 5000);
+    }
+
+    function flushProgress() {
+      clearTimeout(progressTimer);
+      progressTimer = 0;
+      if (!progressDirty) return;
+      progressDirty = false;
+      writeJSON(PROGRESS_KEY, progress);
+    }
+
+    window.addEventListener('pagehide', flushProgress);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') flushProgress();
+    });
+
+    /** A video finished: fill its red bar, and move on if you're playing one of your playlists. */
+    function handleEnded() {
+      const id = playingVideoId();
+      const duration = playingDuration();
+      if (id && duration && !live.live && Library.recordProgress(progress, id, duration, duration)) scheduleProgressSave();
+      if (!queue || !current) return;
+      // A YouTube playlist keeps going by itself until its last video.
+      if (!current.id && live.playlistCount && typeof live.playlistIndex === 'number' && live.playlistIndex < live.playlistCount - 1) return;
+      const index = queue.index;
+      const key = YT.historyKey(current);
+      const advance = () => {
+        if (!queue || queue.index !== index || !current || YT.historyKey(current) !== key) return;
+        // Don't pull the page out from under an open dialog or menu: wait until it's closed.
+        if (isDialogOpen() || !popup.hidden) {
+          advanceTimer = setTimeout(advance, 1000);
+          return;
+        }
+        nextInQueue(true);
+      };
+      clearTimeout(advanceTimer);
+      advanceTimer = setTimeout(advance, 1000);
+    }
+
+    /* ------------------------- playing your playlists ---------------------- */
+
+    function startQueue(playlistId, index, shuffled) {
+      const playlist = Library.getPlaylist(library, playlistId);
+      if (!playlist || !playlist.items.length) return;
+      const items = playlist.items.map((item) => Object.assign({}, item));
+      if (shuffled) shuffleInPlace(items);
+      queue = { playlistId, name: playlist.name, items, index: 0, shuffled: Boolean(shuffled) };
+      playQueueItem(shuffled ? 0 : Math.max(0, Math.min(index, items.length - 1)));
+    }
+
+    function playQueueItem(index, auto) {
+      if (!queue || index < 0 || index >= queue.items.length) return;
+      queue.index = index;
+      const item = queue.items[index];
+      // Saved videos play on their own, so "ended" really means it's time for the next one.
+      play(item.id ? { id: item.id, list: null, start: 0, short: item.short } : toVideo(item), { fromQueue: true, auto: Boolean(auto) });
+    }
+
+    function nextInQueue(auto) {
+      if (queue && queue.index + 1 < queue.items.length) playQueueItem(queue.index + 1, auto);
+    }
+
+    function shuffleInPlace(items) {
+      for (let i = items.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const swap = items[i];
+        items[i] = items[j];
+        items[j] = swap;
+      }
     }
 
     /* ---------------------------- watch history --------------------------- */
@@ -776,7 +1248,12 @@
 
     function addRecent(video) {
       const existing = findEntry(video);
-      const entry = Object.assign({}, existing || {}, toVideo(video), { at: Date.now() });
+      const known = existing || Library.findDetails(library, video) || {};
+      const details = {};
+      ['title', 'author', 'duration', 'live', 'thumb', 'count'].forEach((field) => {
+        if (known[field] !== undefined) details[field] = known[field];
+      });
+      const entry = Object.assign(details, existing || {}, toVideo(video), { at: Date.now() });
       const key = YT.historyKey(video);
       recent = [entry].concat(recent.filter((item) => YT.historyKey(item) !== key)).slice(0, MAX_RECENT);
       saveRecent();
@@ -822,6 +1299,325 @@
 
     function saveRecent() {
       writeJSON(RECENT_KEY, recent);
+    }
+
+    /* ------------------------------- library ------------------------------ */
+
+    function saveLibrary() {
+      writeJSON(LIBRARY_KEY, library);
+    }
+
+    /** Saves the library and refreshes what's on screen (without disturbing the player). */
+    function libraryChanged() {
+      saveLibrary();
+      if (current) {
+        renderGuide();
+        renderWatchActions();
+      } else {
+        render();
+      }
+    }
+
+    /** A video plus everything known about it (title, channel…), ready to save. */
+    function entryFor(video) {
+      const entry = Object.assign(
+        {},
+        Library.findDetails(library, video) || {},
+        findEntry(video) || {},
+        video.id ? { id: video.id, list: null, short: Boolean(video.short) } : { id: null, list: video.list },
+      );
+      if (current && YT.historyKey(current) === YT.historyKey(video)) Library.applyDetails(entry, playerDetails());
+      return entry;
+    }
+
+    function toggleLike() {
+      if (!current || !current.id) return;
+      const video = toVideo(current);
+      if (Library.has(library, Library.LIKED, video)) {
+        const removed = Library.removeItem(library, Library.LIKED, video);
+        libraryChanged();
+        showToast('Removed from Liked videos', {
+          label: 'Undo',
+          run: () => {
+            if (Library.restoreItem(library, removed)) libraryChanged();
+          },
+        });
+      } else if (Library.addItem(library, Library.LIKED, entryFor(video))) {
+        libraryChanged();
+        showToast('Added to Liked videos');
+      } else {
+        showToast('Liked videos is full');
+      }
+    }
+
+    function addToPlaylist(playlistId, video) {
+      const playlist = Library.getPlaylist(library, playlistId);
+      if (!playlist) return;
+      if (Library.addItem(library, playlistId, entryFor(video))) {
+        libraryChanged();
+        showToast(`Saved to ${playlist.name}`);
+      } else if (!Library.has(library, playlistId, video)) {
+        showToast(`${playlist.name} is full`);
+      }
+    }
+
+    function removeFromPlaylist(playlistId, video) {
+      const playlist = Library.getPlaylist(library, playlistId);
+      const removed = playlist ? Library.removeItem(library, playlistId, video) : null;
+      if (!removed) return;
+      libraryChanged();
+      showToast(`Removed from ${playlist.name}`, {
+        label: 'Undo',
+        run: () => {
+          if (Library.restoreItem(library, removed)) libraryChanged();
+        },
+      });
+    }
+
+    function movePlaylistItem(playlistId, video, toIndex) {
+      if (Library.moveItem(library, playlistId, video, toIndex)) libraryChanged();
+    }
+
+    function newPlaylist(returnTo) {
+      openNameDialog(
+        {
+          title: 'New playlist',
+          confirm: 'Create',
+          onSubmit: (name) => {
+            const playlist = Library.createPlaylist(library, name);
+            if (!playlist) {
+              showToast(`You can make up to ${Library.MAX_PLAYLISTS} playlists`);
+              return;
+            }
+            saveLibrary();
+            showView('playlist', playlist.id);
+            showToast('Playlist created');
+          },
+        },
+        returnTo,
+      );
+    }
+
+    function renameShownPlaylist(returnTo) {
+      const playlist = Library.getPlaylist(library, shownPlaylist);
+      if (!playlist || Library.isBuiltIn(playlist.id)) return;
+      openNameDialog(
+        {
+          title: 'Rename playlist',
+          confirm: 'Save',
+          value: playlist.name,
+          onSubmit: (name) => {
+            if (Library.renamePlaylist(library, playlist.id, name)) {
+              libraryChanged();
+              showToast('Playlist renamed');
+            }
+          },
+        },
+        returnTo,
+      );
+    }
+
+    function deleteShownPlaylist() {
+      const removed = Library.deletePlaylist(library, shownPlaylist);
+      if (!removed) return;
+      saveLibrary();
+      showView('library');
+      showToast(`Deleted ${removed.playlist.name}`, {
+        label: 'Undo',
+        run: () => {
+          if (Library.restorePlaylist(library, removed)) libraryChanged();
+        },
+      });
+    }
+
+    function exportBackup() {
+      flushProgress();
+      const data = Library.makeBackup({ library, history: recent, progress });
+      const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+      const link = el('a');
+      link.href = url;
+      link.download = `tubevault-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      link.hidden = true;
+      root.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      showToast('Backup downloaded');
+    }
+
+    async function importBackup(file) {
+      if (file.size > 5000000) {
+        showToast(IMPORT_ERRORS['too-big']);
+        return;
+      }
+      let text = '';
+      try {
+        text = await readFileText(file);
+      } catch (error) {
+        showToast("Couldn't read that file");
+        return;
+      }
+      const backup = Library.readBackup(text, { maxHistory: MAX_RECENT });
+      if (!backup.ok) {
+        showToast(IMPORT_ERRORS[backup.error] || IMPORT_ERRORS['not-backup']);
+        return;
+      }
+      const before = JSON.stringify([library, recent]);
+      const state = { library, history: recent, progress };
+      Library.mergeBackup(state, backup, { maxHistory: MAX_RECENT });
+      library = state.library;
+      recent = state.history;
+      progress = state.progress;
+      saveLibrary();
+      saveRecent();
+      progressDirty = true;
+      flushProgress();
+      render();
+      showToast(JSON.stringify([library, recent]) === before ? 'Everything in that backup is already here' : 'Backup imported');
+    }
+
+    function readFileText(file) {
+      if (typeof file.text === 'function') return file.text();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(reader.error);
+        reader.readAsText(file);
+      });
+    }
+
+    // Another tab changed something: pick it up, so neither tab overwrites the other's changes.
+    window.addEventListener('storage', (event) => {
+      if (event.key === LIBRARY_KEY) {
+        library = Library.sanitizeLibrary(readJSON(LIBRARY_KEY, null));
+      } else if (event.key === RECENT_KEY) {
+        recent = YT.sanitizeHistory(readJSON(RECENT_KEY, []), MAX_RECENT);
+      } else if (event.key === PROGRESS_KEY) {
+        const theirs = Library.sanitizeProgress(readJSON(PROGRESS_KEY, null));
+        Object.keys(theirs).forEach((id) => {
+          const mine = Library.progressFor(progress, id);
+          if (!mine || theirs[id].at > mine.at) progress[id] = theirs[id];
+        });
+        return;
+      } else {
+        return;
+      }
+      if (isOpen && !isDialogOpen() && popup.hidden) {
+        if (current) libraryChanged();
+        else render();
+      }
+    });
+
+    /* ------------------------------ full screen ---------------------------- */
+
+    const fullscreen = {
+      supported: () => typeof stage.requestFullscreen === 'function' || typeof stage.webkitRequestFullscreen === 'function',
+      // False when the page is in a frame that doesn't allow full screen (like some previews).
+      allowed: () => Boolean(document.fullscreenEnabled || document.webkitFullscreenEnabled),
+      element: () => document.fullscreenElement || document.webkitFullscreenElement || null,
+      request(node) {
+        if (typeof node.requestFullscreen === 'function') return Promise.resolve(node.requestFullscreen({ navigationUI: 'hide' }));
+        node.webkitRequestFullscreen();
+        return Promise.resolve();
+      },
+      exit() {
+        try {
+          const result = typeof document.exitFullscreen === 'function' ? document.exitFullscreen() : document.webkitExitFullscreen();
+          if (result && typeof result.catch === 'function') result.catch(() => {});
+        } catch (error) {
+          /* already out */
+        }
+      },
+    };
+
+    function isFullscreen() {
+      const node = fullscreen.element();
+      return Boolean(node && root.contains(node));
+    }
+
+    function toggleFullscreen() {
+      if (!current) return;
+      if (isFullscreen()) {
+        fullscreen.exit();
+        return;
+      }
+      if (fullWindow) {
+        setFullWindow(false);
+        return;
+      }
+      if (fullscreen.supported() && fullscreen.allowed()) {
+        let request;
+        try {
+          request = fullscreen.request(stage);
+        } catch (error) {
+          request = Promise.reject(error);
+        }
+        request.then(lockLandscape, () => setFullWindow(true));
+      } else {
+        setFullWindow(true);
+      }
+    }
+
+    /** The fallback for when the browser won't do real full screen: the player fills the window. */
+    function setFullWindow(on) {
+      if (fullWindow === on) return;
+      fullWindow = on;
+      root.classList.toggle('is-fullwindow', on);
+      fullWindowBar.hidden = !on;
+      syncInert();
+      syncFullscreenButton();
+      if (on) {
+        fullWindowTitle.textContent = titleEl.textContent;
+        fullWindowBar.querySelector('button').focus({ preventScroll: true });
+        if (!fullWindowExplained && fullscreen.supported() && !fullscreen.allowed()) {
+          fullWindowExplained = true;
+          showToast("This page isn't allowed to go full screen here, so the video fills the window instead");
+        }
+      } else if (fullWindowBar.contains(document.activeElement)) {
+        fullscreenButton.focus({ preventScroll: true });
+      }
+    }
+
+    function exitFullscreen() {
+      if (isFullscreen()) fullscreen.exit();
+      setFullWindow(false);
+    }
+
+    function syncFullscreenButton() {
+      const on = isFullscreen() || fullWindow;
+      fullscreenButton.setAttribute('aria-label', on ? 'Exit full screen' : 'Full screen');
+      fullscreenButton.title = on ? 'Exit full screen (f)' : 'Full screen (f)';
+      fullscreenButton.querySelector('use').setAttribute('href', on ? '#i-fullscreen-exit' : '#i-fullscreen');
+    }
+
+    ['fullscreenchange', 'webkitfullscreenchange'].forEach((type) => {
+      document.addEventListener(type, () => {
+        if (!fullscreen.element()) {
+          lastFullscreenExit = Date.now();
+          unlockOrientation();
+        }
+        syncFullscreenButton();
+      });
+    });
+
+    // Phones: turn sideways for full screen, like the YouTube app (not for Shorts).
+    function lockLandscape() {
+      if (!current || current.short || finePointer.matches) return;
+      try {
+        const orientation = screen.orientation;
+        if (orientation && typeof orientation.lock === 'function') orientation.lock('landscape').catch(() => {});
+      } catch (error) {
+        /* not supported */
+      }
+    }
+
+    function unlockOrientation() {
+      try {
+        const orientation = screen.orientation;
+        if (orientation && typeof orientation.unlock === 'function') orientation.unlock();
+      } catch (error) {
+        /* not supported */
+      }
     }
 
     /* ------------------------------ settings ------------------------------ */
@@ -884,6 +1680,7 @@
         return;
       }
       closeGuide();
+      closePopup(false);
       showMenuPanel(menuMain);
       settingsBackdrop.hidden = false;
       settingsMenu.hidden = false;
@@ -902,17 +1699,16 @@
     }
 
     function focusFirst(container) {
-      const first = container.querySelector('button:not([hidden])');
+      const first = container.querySelector('button:not([hidden]):not(:disabled), input:not([hidden])');
       if (first) first.focus({ preventScroll: true });
     }
 
     function openGuide() {
       toggleSettings(false);
+      closePopup(false);
       root.classList.add('is-guide-open');
       guide.inert = false;
-      [masthead, page, rail].forEach((node) => {
-        node.inert = true;
-      });
+      syncInert();
       guideButton.setAttribute('aria-expanded', 'true');
       focusFirst(guide.querySelector('.yt-guide__section'));
     }
@@ -921,18 +1717,209 @@
       if (!root.classList.contains('is-guide-open')) return;
       root.classList.remove('is-guide-open');
       guide.inert = true;
-      [masthead, page, rail].forEach((node) => {
-        node.inert = false;
-      });
+      syncInert();
       guideButton.setAttribute('aria-expanded', 'false');
       if (guide.contains(document.activeElement) || document.activeElement === document.body) {
         guideButton.focus({ preventScroll: true });
       }
     }
 
+    /** Keeps whatever is behind the side menu, a dialog or the full-window player out of reach. */
+    function syncInert() {
+      const covered = root.classList.contains('is-guide-open') || isDialogOpen();
+      masthead.inert = covered || fullWindow;
+      rail.inert = covered || fullWindow;
+      page.inert = covered;
+      [titleEl, owner, desc, secondary].forEach((node) => {
+        node.inert = fullWindow;
+      });
+      fullWindowBar.inert = covered;
+    }
+
     function closeMenus() {
       toggleSettings(false);
       closeGuide();
+      closePopup(false);
+    }
+
+    function closeOverlays() {
+      closeMenus();
+      closeDialog(false);
+    }
+
+    /* The ⋮ menu on videos */
+    function openItemMenu(anchor, item, context, viaKeyboard) {
+      closeMenus();
+      const video = toVideo(item);
+      const inPlaylist = context.from === 'playlist' ? Library.getPlaylist(library, context.playlistId) : null;
+      const actions = [];
+      if (!inPlaylist || inPlaylist.id !== Library.WATCH_LATER) {
+        const later = Library.has(library, Library.WATCH_LATER, video);
+        actions.push({
+          icon: 'clock',
+          label: later ? 'Remove from Watch later' : 'Save to Watch later',
+          run: () => (later ? removeFromPlaylist(Library.WATCH_LATER, video) : addToPlaylist(Library.WATCH_LATER, video)),
+        });
+      }
+      actions.push({ icon: 'save', label: 'Save to playlist', run: () => openSaveDialog(video, anchor) });
+      actions.push({ icon: 'share', label: 'Share', run: () => shareLink(video) });
+      actions.push(null);
+      if (inPlaylist) {
+        const key = YT.historyKey(video);
+        const index = inPlaylist.items.findIndex((entry) => YT.historyKey(entry) === key);
+        if (index > 0) actions.push({ icon: 'to-top', label: 'Move to top', run: () => movePlaylistItem(inPlaylist.id, video, 0) });
+        if (index < inPlaylist.items.length - 1) {
+          actions.push({ icon: 'to-bottom', label: 'Move to bottom', run: () => movePlaylistItem(inPlaylist.id, video, inPlaylist.items.length - 1) });
+        }
+        actions.push({ icon: 'trash', label: `Remove from ${inPlaylist.name}`, run: () => removeFromPlaylist(inPlaylist.id, video) });
+      } else {
+        actions.push({ icon: 'trash', label: 'Remove from watch history', run: () => removeRecent(YT.historyKey(item)) });
+      }
+      popup.replaceChildren(...actions.map((action) => (action ? popupItem(action) : el('hr', 'yt-menu__divider'))));
+      popupAnchor = anchor;
+      anchor.setAttribute('aria-expanded', 'true');
+      const sheet = compact.matches;
+      popup.classList.toggle('is-sheet', sheet);
+      popupBackdrop.classList.toggle('is-dim', sheet);
+      popupBackdrop.hidden = false;
+      popup.hidden = false;
+      placePopup(anchor, sheet);
+      if (viaKeyboard) focusFirst(popup);
+    }
+
+    function popupItem(action) {
+      const button = el('button', 'yt-menu__item');
+      button.type = 'button';
+      button.append(icon(action.icon), el('span', 'yt-menu__label', action.label));
+      button.addEventListener('click', () => {
+        closePopup();
+        action.run();
+      });
+      return button;
+    }
+
+    function placePopup(anchor, sheet) {
+      popup.style.top = '';
+      popup.style.right = '';
+      popup.style.left = '';
+      if (sheet) return;
+      // Under the ⋮ button, lined up with its right edge; above it if there's no room below.
+      const rect = anchor.getBoundingClientRect();
+      const width = popup.offsetWidth;
+      const height = popup.offsetHeight;
+      let left = rect.right - width;
+      if (left < 8) left = rect.left;
+      left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
+      let top = rect.bottom + 4;
+      if (top + height > window.innerHeight - 8) top = Math.max(8, rect.top - height - 4);
+      popup.style.left = `${Math.round(left)}px`;
+      popup.style.top = `${Math.round(top)}px`;
+      popup.style.right = 'auto';
+    }
+
+    function closePopup(restoreFocus = true) {
+      if (popup.hidden) return;
+      const hadFocus = popup.contains(document.activeElement);
+      popup.hidden = true;
+      popupBackdrop.hidden = true;
+      popup.replaceChildren();
+      const anchor = popupAnchor;
+      popupAnchor = null;
+      if (anchor) anchor.setAttribute('aria-expanded', 'false');
+      if (restoreFocus && hadFocus) refocus(anchor);
+    }
+
+    /** Puts focus back on a button, or on its replacement if the list was redrawn meanwhile. */
+    function refocus(node) {
+      let target = node;
+      if (target && !target.isConnected && target.dataset && target.dataset.focusKey && window.CSS && CSS.escape) {
+        target = root.querySelector(`[data-focus-key="${CSS.escape(target.dataset.focusKey)}"]`);
+      }
+      if (target && target.isConnected && typeof target.focus === 'function') target.focus({ preventScroll: true });
+    }
+
+    /* Dialogs */
+    function openDialog(dialog, returnTo) {
+      closeMenus();
+      closeDialog(false);
+      dialogReturn = returnTo || document.activeElement;
+      dialogScrim.hidden = false;
+      dialog.hidden = false;
+      syncInert();
+    }
+
+    function closeDialog(restoreFocus = true) {
+      if (!isDialogOpen()) return;
+      saveDialog.hidden = true;
+      nameDialog.hidden = true;
+      dialogScrim.hidden = true;
+      syncInert();
+      saveTarget = null;
+      nameHandler = null;
+      const back = dialogReturn;
+      dialogReturn = null;
+      if (restoreFocus) refocus(back);
+    }
+
+    function isDialogOpen() {
+      return !saveDialog.hidden || !nameDialog.hidden;
+    }
+
+    function openSaveDialog(video, returnTo) {
+      const target = entryFor(video);
+      openDialog(saveDialog, returnTo);
+      saveTarget = target;
+      saveTitle.textContent = target.id ? 'Save video to…' : 'Save playlist to…';
+      renderSaveList();
+      showCreateForm(false);
+      focusFirst(saveList);
+    }
+
+    function renderSaveList() {
+      // Liked videos fills up from the Like button, so it isn't offered here (same as YouTube).
+      const lists = library.playlists.filter((playlist) => playlist.id !== Library.LIKED);
+      saveList.replaceChildren(
+        ...lists.map((playlist) => {
+          const item = el('li');
+          const label = el('label', 'yt-check');
+          const box = el('input', 'yt-check__input');
+          box.type = 'checkbox';
+          box.dataset.playlist = playlist.id;
+          box.checked = Library.has(library, playlist.id, saveTarget);
+          const mark = el('span', 'yt-check__box');
+          mark.append(icon('check'));
+          const name = el('span', 'yt-check__label', playlist.name);
+          name.dir = 'auto';
+          label.append(box, mark, name, icon('lock'));
+          label.title = 'Private: only on this browser';
+          item.append(label);
+          return item;
+        }),
+      );
+    }
+
+    function showCreateForm(show) {
+      saveNew.hidden = show;
+      saveForm.hidden = !show;
+      saveName.value = '';
+      syncCounter(saveName, saveCount, saveCreate);
+      if (show) saveName.focus({ preventScroll: true });
+    }
+
+    function syncCounter(field, counter, submitButton) {
+      counter.textContent = `${field.value.length}/${Library.MAX_NAME}`;
+      submitButton.disabled = field.value.trim().length === 0;
+    }
+
+    function openNameDialog(options, returnTo) {
+      nameTitle.textContent = options.title;
+      nameOk.textContent = options.confirm;
+      nameInput.value = options.value || '';
+      syncCounter(nameInput, nameCount, nameOk);
+      openDialog(nameDialog, returnTo);
+      nameHandler = options.onSubmit;
+      nameInput.focus({ preventScroll: true });
+      nameInput.select();
     }
 
     function openSearch() {
@@ -996,9 +1983,8 @@
       play(result.video);
     }
 
-    async function share() {
-      if (!current) return;
-      const url = YT.watchUrl(current);
+    async function shareLink(video) {
+      const url = YT.watchUrl(video);
       if (!finePointer.matches && typeof navigator.share === 'function') {
         try {
           await navigator.share({ url });
@@ -1018,7 +2004,13 @@
       const viaKeyboard = event.detail === 0;
       switch (target.dataset.vaultAction) {
         case 'home':
-          goHome();
+          showView('home');
+          break;
+        case 'library':
+          showView('library');
+          break;
+        case 'playlist':
+          showView('playlist', target.dataset.playlist);
           break;
         case 'paste':
           pasteFromClipboard();
@@ -1066,10 +2058,56 @@
           closeSearch();
           break;
         case 'share':
-          share();
+          if (current) shareLink(current);
           break;
         case 'stop':
-          goHome();
+          closeVideo();
+          break;
+        case 'like':
+          toggleLike();
+          break;
+        case 'save':
+          if (current) openSaveDialog(toVideo(current), target);
+          break;
+        case 'fullscreen':
+          toggleFullscreen();
+          break;
+        case 'queue-next':
+          nextInQueue();
+          break;
+        case 'queue-close':
+          queue = null;
+          renderQueue();
+          break;
+        case 'play-all':
+          startQueue(shownPlaylist, 0, false);
+          break;
+        case 'shuffle':
+          startQueue(shownPlaylist, 0, true);
+          break;
+        case 'new-playlist':
+          newPlaylist(target);
+          break;
+        case 'rename-playlist':
+          renameShownPlaylist(target);
+          break;
+        case 'delete-playlist':
+          deleteShownPlaylist();
+          break;
+        case 'export':
+          exportBackup();
+          break;
+        case 'import':
+          importFile.click();
+          break;
+        case 'save-new':
+          showCreateForm(true);
+          break;
+        case 'dialog-close':
+          closeDialog();
+          break;
+        case 'popup-close':
+          closePopup();
           break;
         default:
           break;
@@ -1109,15 +2147,66 @@
       play(result.video);
     });
 
-    // You can also paste anywhere in TubeVault.
+    // You can also paste a link anywhere in TubeVault (but text boxes get to paste normally).
     document.addEventListener('paste', (event) => {
-      if (!isOpen || event.target === input) return;
+      if (!isOpen || isTextField(event.target) || isDialogOpen()) return;
       const text = event.clipboardData ? event.clipboardData.getData('text') : '';
       if (!text.trim()) return;
       event.preventDefault();
       input.value = text.trim();
       syncInputClear();
       submit();
+    });
+
+    saveList.addEventListener('change', (event) => {
+      const box = event.target.closest('input[data-playlist]');
+      if (!box || !saveTarget) return;
+      const playlist = Library.getPlaylist(library, box.dataset.playlist);
+      if (!playlist) return;
+      if (box.checked) {
+        if (Library.addItem(library, playlist.id, saveTarget)) {
+          showToast(`Saved to ${playlist.name}`);
+        } else {
+          box.checked = Library.has(library, playlist.id, saveTarget);
+          if (!box.checked) showToast(`${playlist.name} is full`);
+        }
+      } else if (Library.removeItem(library, playlist.id, saveTarget)) {
+        showToast(`Removed from ${playlist.name}`);
+      }
+      libraryChanged();
+    });
+
+    saveName.addEventListener('input', () => syncCounter(saveName, saveCount, saveCreate));
+
+    saveForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (!saveTarget || !saveName.value.trim()) return;
+      const playlist = Library.createPlaylist(library, saveName.value);
+      if (!playlist) {
+        showToast(`You can make up to ${Library.MAX_PLAYLISTS} playlists`);
+        return;
+      }
+      Library.addItem(library, playlist.id, saveTarget);
+      closeDialog();
+      libraryChanged();
+      showToast(`Saved to ${playlist.name}`);
+    });
+
+    nameInput.addEventListener('input', () => syncCounter(nameInput, nameCount, nameOk));
+
+    nameForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const handler = nameHandler;
+      const value = nameInput.value;
+      if (!value.trim()) return;
+      closeDialog();
+      if (handler) handler(value);
+    });
+
+    importFile.addEventListener('change', () => {
+      const file = importFile.files && importFile.files[0];
+      importFile.value = '';
+      if (file) importBackup(file);
     });
 
     toastAction.addEventListener('click', () => {
@@ -1129,26 +2218,48 @@
     document.addEventListener('keydown', (event) => {
       if (!isOpen) return;
       if (event.key === 'Escape') {
-        // Esc always locks straight away, even with a menu open.
+        // This Esc is the browser leaving full screen; don't lock as well.
+        if (fullscreen.element() || Date.now() - lastFullscreenExit < 500) return;
         event.preventDefault();
+        if (fullWindow) {
+          setFullWindow(false);
+          return;
+        }
+        // Otherwise Esc always locks straight away, even with a menu or dialog open.
         close();
         return;
       }
-      const target = event.target;
-      const typing = target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
-      if (event.key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      if (isTextField(event.target) || event.ctrlKey || event.metaKey || event.altKey || isDialogOpen()) return;
+      if (event.key === '/') {
         event.preventDefault();
         openSearch();
+      } else if ((event.key === 'f' || event.key === 'F') && current) {
+        event.preventDefault();
+        toggleFullscreen();
       }
     });
 
     window.addEventListener('resize', () => {
       if (!isOpen) return;
       toggleSettings(false);
+      closePopup(false);
       if (!compact.matches) closeSearch();
     });
 
+    // The ⋮ menu is pinned to its button, so scrolling closes it (like YouTube).
+    root.addEventListener(
+      'scroll',
+      () => {
+        if (!popup.hidden && !popup.classList.contains('is-sheet')) closePopup(false);
+      },
+      { passive: true },
+    );
+
     /* ------------------------------- helpers ------------------------------ */
+
+    function isTextField(node) {
+      return Boolean(node && (node.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(node.tagName)));
+    }
 
     function showToast(text, action) {
       toastText.textContent = text;
@@ -1208,7 +2319,7 @@
       try {
         localStorage.setItem(key, JSON.stringify(value));
       } catch (error) {
-        /* storage full or disabled; history just won't persist */
+        /* storage full or disabled; it just won't persist */
       }
     }
 
@@ -1230,6 +2341,7 @@
     }
 
     return {
+      available: true,
       open,
       close,
       get isOpen() {

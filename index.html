@@ -13,8 +13,9 @@
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="css/tubevault.css">
+  <!-- Bump ?v= whenever a CSS or JS file changes, so browsers never mix old and new files. -->
+  <link rel="stylesheet" href="css/styles.css?v=4">
+  <link rel="stylesheet" href="css/tubevault.css?v=4">
 </head>
 <body>
   <!-- Icon sprite -->
@@ -45,6 +46,20 @@
     <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M20 12H4.5M11 5.5 4.5 12l6.5 6.5"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="m4.5 12.5 4.8 4.8L19.5 7"/></symbol>
     <symbol id="i-share" viewBox="0 0 24 24"><path d="M14 5.5 20.5 12 14 18.5v-3.6c-4.6 0-7.9 1.5-10.5 5 .9-5.1 3.9-9.7 10.5-10.6z"/></symbol>
+    <symbol id="i-like" viewBox="0 0 24 24"><path d="M7.5 10.5v10h-3a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1z"/><path d="M7.5 10.5 11.4 3.9a1.7 1.7 0 0 1 3.1 1.3L13.7 9h5.2a2 2 0 0 1 1.96 2.42l-1.55 7.2a2.4 2.4 0 0 1-2.35 1.88H7.5"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M3.5 6.5h12M3.5 11.5h12M3.5 16.5h7M18 13.5v7M14.5 17h7"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2" style="stroke: var(--icon-cutout, currentColor)"/></symbol>
+    <symbol id="i-library" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="13" height="13" rx="2"/><path d="M8.6 7.6v4.8l4-2.4z" style="fill: var(--icon-cutout, none); stroke: var(--icon-cutout, currentColor)"/><path d="M20.5 7.5v11a2 2 0 0 1-2 2h-11"/></symbol>
+    <symbol id="i-fullscreen" viewBox="0 0 24 24"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></symbol>
+    <symbol id="i-fullscreen-exit" viewBox="0 0 24 24"><path d="M9 4v4a1 1 0 0 1-1 1H4M20 9h-4a1 1 0 0 1-1-1V4M15 20v-4a1 1 0 0 1 1-1h4M4 15h4a1 1 0 0 1 1 1v4"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M4 17h2.5c1.6 0 3.1-.8 4-2.1l3-5.8c.9-1.3 2.4-2.1 4-2.1H20M4 7h2.5c1.6 0 3.1.8 4 2.1M13.5 14.9c.9 1.3 2.4 2.1 4 2.1H20M17.5 4.5 20 7l-2.5 2.5M17.5 14.5 20 17l-2.5 2.5"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 6.5h15M9.5 6.5v-2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2M6.5 6.5l.8 12.6a1.5 1.5 0 0 0 1.5 1.4h6.4a1.5 1.5 0 0 0 1.5-1.4l.8-12.6"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20v-3.5L15.6 4.9a2 2 0 0 1 2.8 0l.7.7a2 2 0 0 1 0 2.8L7.5 20z"/><path d="m13.5 7 3.5 3.5"/></symbol>
+    <symbol id="i-to-top" viewBox="0 0 24 24"><path d="M5 4h14M12 20V8.5M6.5 14 12 8.5l5.5 5.5"/></symbol>
+    <symbol id="i-to-bottom" viewBox="0 0 24 24"><path d="M5 20h14M12 4v11.5M6.5 10 12 15.5l5.5-5.5"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="M5.5 6.2v11.6a.8.8 0 0 0 1.25.66l8.4-5.8a.8.8 0 0 0 0-1.32l-8.4-5.8a.8.8 0 0 0-1.25.66z" fill="currentColor" stroke="none"/><path d="M18.5 5.5v13"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10.5l5 5 5-5M4.5 19.5h15"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15.5v-11M7 9l5-5 5 5M4.5 19.5h15"/></symbol>
   </svg>
 
   <!-- ============================ Calculator ============================ -->
@@ -146,8 +161,11 @@
     </header>
 
     <nav class="yt-rail" aria-label="Shortcuts">
-      <button class="yt-rail__item" type="button" data-vault-action="home">
+      <button class="yt-rail__item" type="button" data-vault-action="home" data-nav="home">
         <svg class="icon" aria-hidden="true"><use href="#i-home"/></svg><span>Home</span>
+      </button>
+      <button class="yt-rail__item" type="button" data-vault-action="library" data-nav="library">
+        <svg class="icon" aria-hidden="true"><use href="#i-library"/></svg><span>You</span>
       </button>
       <button class="yt-rail__item" type="button" data-vault-action="paste">
         <svg class="icon" aria-hidden="true"><use href="#i-clipboard"/></svg><span>Paste</span>
@@ -162,7 +180,7 @@
 
     <main class="yt-page" id="vault-page">
       <!-- Home: your watch history, laid out like YouTube's home feed -->
-      <div class="yt-home" id="vault-home">
+      <div class="yt-view yt-home" id="vault-home">
         <div class="yt-chips" id="vault-chips" role="group" aria-label="Filter watch history" hidden>
           <button class="yt-chip" type="button" data-filter="all" aria-pressed="true">All</button>
           <button class="yt-chip" type="button" data-filter="videos" aria-pressed="false">Videos</button>
@@ -182,6 +200,87 @@
         </div>
       </div>
 
+      <!-- You: your playlists, recent history and backups -->
+      <div class="yt-view yt-library" id="vault-library" hidden>
+        <header class="yt-you">
+          <span class="yt-you__avatar" aria-hidden="true"><svg class="icon"><use href="#i-library"/></svg></span>
+          <div class="yt-you__text">
+            <h1 class="yt-you__title">You</h1>
+            <p class="yt-you__sub">Your playlists, likes and history are saved in this browser only.</p>
+          </div>
+        </header>
+
+        <section class="yt-shelf" aria-labelledby="vault-shelf-history">
+          <div class="yt-shelf__head">
+            <h2 class="yt-shelf__title" id="vault-shelf-history">History</h2>
+            <button class="yt-btn yt-btn--outline" type="button" data-vault-action="home">View all</button>
+          </div>
+          <ul class="yt-shelf__row" id="vault-lib-history"></ul>
+          <p class="yt-shelf__empty" id="vault-lib-history-empty" hidden>Videos you watch will show up here.</p>
+        </section>
+
+        <section class="yt-shelf" aria-labelledby="vault-shelf-playlists">
+          <div class="yt-shelf__head">
+            <h2 class="yt-shelf__title" id="vault-shelf-playlists">Playlists</h2>
+            <button class="yt-btn yt-btn--outline" type="button" data-vault-action="new-playlist">
+              <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>New playlist</span>
+            </button>
+          </div>
+          <ul class="yt-shelf__grid" id="vault-lib-playlists"></ul>
+        </section>
+
+        <section class="yt-shelf yt-backup" aria-labelledby="vault-shelf-backup">
+          <h2 class="yt-shelf__title" id="vault-shelf-backup">Backup</h2>
+          <p class="yt-backup__text">Clearing this browser&rsquo;s data would erase your library. Export a backup to keep it safe, or to move it to another browser.</p>
+          <div class="yt-backup__actions">
+            <button class="yt-btn" type="button" data-vault-action="export">
+              <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg><span>Export backup</span>
+            </button>
+            <button class="yt-btn" type="button" data-vault-action="import">
+              <svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg><span>Import backup</span>
+            </button>
+          </div>
+          <input class="visually-hidden" id="vault-import-file" type="file" accept=".json,application/json" tabindex="-1" aria-hidden="true">
+        </section>
+      </div>
+
+      <!-- One playlist: Watch later, Liked videos or one of yours -->
+      <div class="yt-view yt-plpage" id="vault-playlist" hidden>
+        <header class="yt-plhero">
+          <div class="yt-plhero__bg" id="vault-pl-bg" aria-hidden="true"></div>
+          <div class="yt-plhero__content">
+            <button class="yt-plhero__thumb" id="vault-pl-thumb" type="button" data-vault-action="play-all" aria-label="Play all"></button>
+            <div class="yt-plhero__info">
+              <h1 class="yt-plhero__title" id="vault-pl-title" dir="auto"></h1>
+              <p class="yt-plhero__meta" id="vault-pl-meta"></p>
+              <div class="yt-plhero__tools" id="vault-pl-tools">
+                <button class="yt-icon-btn yt-icon-btn--glass" type="button" data-vault-action="rename-playlist" aria-label="Rename playlist" title="Rename">
+                  <svg class="icon" aria-hidden="true"><use href="#i-pencil"/></svg>
+                </button>
+                <button class="yt-icon-btn yt-icon-btn--glass" type="button" data-vault-action="delete-playlist" aria-label="Delete playlist" title="Delete playlist">
+                  <svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>
+                </button>
+              </div>
+              <div class="yt-plhero__play">
+                <button class="yt-btn yt-btn--white" type="button" data-vault-action="play-all">
+                  <svg class="icon" aria-hidden="true"><use href="#i-play"/></svg><span>Play all</span>
+                </button>
+                <button class="yt-btn yt-btn--glass" type="button" data-vault-action="shuffle">
+                  <svg class="icon" aria-hidden="true"><use href="#i-shuffle"/></svg><span>Shuffle</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+        <div class="yt-pllist">
+          <ol class="yt-plitems" id="vault-pl-items"></ol>
+          <div class="yt-plempty" id="vault-pl-empty" hidden>
+            <p class="yt-plempty__title">No videos in this playlist yet</p>
+            <p class="yt-plempty__text" id="vault-pl-empty-text"></p>
+          </div>
+        </div>
+      </div>
+
       <!-- Watch page -->
       <div class="yt-watch" id="vault-watch" hidden>
         <div class="yt-watch__primary">
@@ -197,11 +296,20 @@
               <a class="yt-btn yt-btn--primary" id="vault-open" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">Open in YouTube</a>
             </div>
             <div class="yt-actions">
+              <button class="yt-btn" id="vault-like" type="button" data-vault-action="like" aria-pressed="false" title="I like this">
+                <svg class="icon" aria-hidden="true"><use href="#i-like"/></svg><span>Like</span>
+              </button>
               <button class="yt-btn" type="button" data-vault-action="share">
                 <svg class="icon" aria-hidden="true"><use href="#i-share"/></svg><span>Share</span>
               </button>
-              <button class="yt-btn" type="button" data-vault-action="stop">
-                <svg class="icon" aria-hidden="true"><use href="#i-x"/></svg><span>Close</span>
+              <button class="yt-btn" id="vault-save-btn" type="button" data-vault-action="save" aria-haspopup="dialog" title="Save to a playlist">
+                <svg class="icon" aria-hidden="true"><use href="#i-save"/></svg><span>Save</span>
+              </button>
+              <button class="yt-btn yt-btn--icon" id="vault-fs-btn" type="button" data-vault-action="fullscreen" aria-label="Full screen" title="Full screen (f)">
+                <svg class="icon" aria-hidden="true"><use href="#i-fullscreen"/></svg>
+              </button>
+              <button class="yt-btn yt-btn--icon" type="button" data-vault-action="stop" aria-label="Close video" title="Close video">
+                <svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>
               </button>
             </div>
           </div>
@@ -211,13 +319,37 @@
             <p class="yt-desc__line" id="vault-desc-note"></p>
           </div>
         </div>
-        <aside class="yt-watch__secondary" aria-labelledby="vault-upnext-title">
+        <aside class="yt-watch__secondary" aria-label="More videos">
+          <!-- Playing a saved playlist: what's next, like YouTube's playlist panel -->
+          <section class="yt-queue" id="vault-queue" aria-labelledby="vault-queue-title" hidden>
+            <header class="yt-queue__head">
+              <div class="yt-queue__heading">
+                <h2 class="yt-queue__title" id="vault-queue-title" dir="auto"></h2>
+                <p class="yt-queue__sub" id="vault-queue-sub"></p>
+              </div>
+              <button class="yt-icon-btn" id="vault-queue-next" type="button" data-vault-action="queue-next" aria-label="Next video" title="Next video">
+                <svg class="icon" aria-hidden="true"><use href="#i-next"/></svg>
+              </button>
+              <button class="yt-icon-btn" type="button" data-vault-action="queue-close" aria-label="Close playlist" title="Close playlist">
+                <svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>
+              </button>
+            </header>
+            <ol class="yt-queue__items" id="vault-queue-items"></ol>
+          </section>
           <h2 class="yt-watch__heading" id="vault-upnext-title">Recently watched</h2>
-          <ul class="yt-upnext" id="vault-upnext"></ul>
+          <ul class="yt-upnext" id="vault-upnext" aria-labelledby="vault-upnext-title"></ul>
           <p class="yt-upnext__note" id="vault-upnext-note" hidden>Videos you watch will show up here.</p>
         </aside>
       </div>
     </main>
+
+    <!-- When the browser won't do real full screen (say, inside a frame), the video fills the window -->
+    <div class="yt-fwbar" id="vault-fwbar" hidden>
+      <button class="yt-fwbar__exit" type="button" data-vault-action="fullscreen" title="Exit full screen (Esc)">
+        <svg class="icon" aria-hidden="true"><use href="#i-fullscreen-exit"/></svg><span>Exit full screen</span>
+      </button>
+      <span class="yt-fwbar__title" id="vault-fwbar-title" dir="auto"></span>
+    </div>
 
     <!-- Settings (the ⋮ button). Clicking the backdrop closes it without clicking what's underneath. -->
     <div class="yt-menu-backdrop" id="vault-settings-backdrop" data-vault-action="settings-close" hidden></div>
@@ -237,7 +369,7 @@
           <span class="yt-menu__label">Clear watch history</span>
         </button>
         <hr class="yt-menu__divider yt-menu__keys">
-        <p class="yt-menu__hint yt-menu__keys"><kbd>Esc</kbd> Lock <span aria-hidden="true">&middot;</span> <kbd>/</kbd> Paste a link</p>
+        <p class="yt-menu__hint yt-menu__keys"><kbd>Esc</kbd> Lock <span aria-hidden="true">&middot;</span> <kbd>/</kbd> Paste a link <span aria-hidden="true">&middot;</span> <kbd>F</kbd> Full screen</p>
       </div>
       <div class="yt-menu__panel" id="vault-menu-appearance" hidden>
         <div class="yt-menu__head">
@@ -259,6 +391,50 @@
       </div>
     </div>
 
+    <!-- The ⋮ menu on a video (Save to Watch later, Save to playlist, Remove…) -->
+    <div class="yt-menu-backdrop" id="vault-popup-backdrop" data-vault-action="popup-close" hidden></div>
+    <div class="yt-menu yt-popup" id="vault-popup" aria-label="Video actions" hidden></div>
+
+    <!-- Dialogs -->
+    <div class="yt-dialog-scrim" id="vault-dialog-scrim" data-vault-action="dialog-close" hidden></div>
+    <div class="yt-dialog yt-save" id="vault-save" role="dialog" aria-modal="true" aria-labelledby="vault-save-title" hidden>
+      <div class="yt-dialog__head">
+        <h2 class="yt-dialog__title" id="vault-save-title">Save video to&hellip;</h2>
+        <button class="yt-icon-btn" type="button" data-vault-action="dialog-close" aria-label="Close" title="Close">
+          <svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>
+        </button>
+      </div>
+      <ul class="yt-save__list" id="vault-save-list"></ul>
+      <button class="yt-save__new" id="vault-save-new" type="button" data-vault-action="save-new">
+        <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>Create new playlist</span>
+      </button>
+      <form class="yt-save__form" id="vault-save-form" autocomplete="off" novalidate hidden>
+        <label class="yt-field">
+          <span class="yt-field__label">Name</span>
+          <input class="yt-field__input" id="vault-save-name" type="text" maxlength="150" placeholder="Enter playlist name&hellip;" spellcheck="false" enterkeyhint="done">
+        </label>
+        <div class="yt-field__foot" id="vault-save-count">0/150</div>
+        <div class="yt-dialog__actions">
+          <button class="yt-btn yt-btn--text" id="vault-save-create" type="submit" disabled>Create</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="yt-dialog yt-namebox" id="vault-name" role="dialog" aria-modal="true" aria-labelledby="vault-name-title" hidden>
+      <form id="vault-name-form" autocomplete="off" novalidate>
+        <h2 class="yt-namebox__title" id="vault-name-title">New playlist</h2>
+        <label class="yt-field">
+          <span class="yt-field__label">Title</span>
+          <input class="yt-field__input" id="vault-name-input" type="text" maxlength="150" placeholder="Choose a title" spellcheck="false" enterkeyhint="done">
+        </label>
+        <div class="yt-field__foot" id="vault-name-count">0/150</div>
+        <div class="yt-dialog__actions">
+          <button class="yt-btn yt-btn--text" type="button" data-vault-action="dialog-close">Cancel</button>
+          <button class="yt-btn yt-btn--text" id="vault-name-ok" type="submit" disabled>Create</button>
+        </div>
+      </form>
+    </div>
+
     <!-- Side menu (the ☰ button) -->
     <div class="yt-scrim" data-vault-action="guide-close"></div>
     <nav class="yt-guide" id="vault-guide" aria-label="Main menu" inert>
@@ -272,12 +448,24 @@
         </button>
       </div>
       <div class="yt-guide__section">
-        <button class="yt-guide__item" type="button" data-vault-action="home">
+        <button class="yt-guide__item" type="button" data-vault-action="home" data-nav="home">
           <svg class="icon" aria-hidden="true"><use href="#i-home"/></svg><span>Home</span>
         </button>
         <button class="yt-guide__item" type="button" data-vault-action="paste">
           <svg class="icon" aria-hidden="true"><use href="#i-clipboard"/></svg><span>Paste link</span>
         </button>
+      </div>
+      <div class="yt-guide__section">
+        <button class="yt-guide__item yt-guide__item--heading" type="button" data-vault-action="library" data-nav="library">
+          <span>You</span><svg class="icon" aria-hidden="true"><use href="#i-chevron-right"/></svg>
+        </button>
+        <button class="yt-guide__item" type="button" data-vault-action="playlist" data-playlist="WL" data-nav="WL">
+          <svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg><span class="yt-guide__label">Watch later</span><span class="yt-guide__aside" data-count="WL"></span>
+        </button>
+        <button class="yt-guide__item" type="button" data-vault-action="playlist" data-playlist="LL" data-nav="LL">
+          <svg class="icon" aria-hidden="true"><use href="#i-like"/></svg><span class="yt-guide__label">Liked videos</span><span class="yt-guide__aside" data-count="LL"></span>
+        </button>
+        <div class="yt-guide__playlists" id="vault-guide-playlists"></div>
       </div>
       <div class="yt-guide__section">
         <h2 class="yt-guide__title">Settings</h2>
@@ -300,8 +488,9 @@
     </div>
   </section>
 
-  <script src="js/calculator.js"></script>
-  <script src="js/youtube.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/calculator.js?v=4"></script>
+  <script src="js/youtube.js?v=4"></script>
+  <script src="js/library.js?v=4"></script>
+  <script src="js/app.js?v=4"></script>
 </body>
 </html>

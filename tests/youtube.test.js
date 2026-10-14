@@ -200,6 +200,7 @@ test('reads the title, channel and duration the player reports', () => {
     title: 'YouTube Developers Live: Embedded Web Player Customization',
     duration: 1344,
     currentTime: 0,
+    state: 5, // cued
   });
   // The channel name often arrives a moment later.
   const later = { event: 'infoDelivery', info: { videoData: { video_id: 'M7lc1UVf-VE', author: 'Google for Developers', title: 'x' } } };
@@ -213,6 +214,21 @@ test('reads the title, channel and duration the player reports', () => {
   });
   const playlist = { event: 'infoDelivery', info: { playlist: [ID, 'M7lc1UVf-VE', 'aqz-KE-bpKQ'], videoData: { video_id: ID, isLive: true } } };
   assert.deepEqual(YT.readPlayerMessage(playlist), { event: 'infoDelivery', videoId: ID, live: true, playlistCount: 3 });
+});
+
+test('reads player state changes, so playlists can move on when a video ends', () => {
+  assert.deepEqual(YT.readPlayerMessage('{"event":"infoDelivery","info":{"playerState":0,"currentTime":213}}'), {
+    event: 'infoDelivery',
+    currentTime: 213,
+    state: 0,
+  });
+  assert.deepEqual(YT.readPlayerMessage({ event: 'onStateChange', info: 1 }), { event: 'onStateChange', state: 1 });
+  assert.deepEqual(YT.readPlayerMessage({ event: 'infoDelivery', info: { playlistIndex: 2 } }), { event: 'infoDelivery', playlistIndex: 2 });
+  for (const junk of [9, -2, 1.5, '1', null]) {
+    assert.equal(YT.readPlayerMessage({ event: 'onStateChange', info: junk }).state, undefined, String(junk));
+    assert.equal(YT.readPlayerMessage({ event: 'infoDelivery', info: { playerState: junk, playlistIndex: junk } }).state, undefined);
+  }
+  assert.equal(YT.readPlayerMessage({ event: 'infoDelivery', info: { playlistIndex: -1 } }).playlistIndex, undefined);
 });
 
 test('reads player errors', () => {
@@ -283,5 +299,8 @@ test('cleans watch history from storage', () => {
   assert.deepEqual(YT.sanitizeHistory('nope'), []);
   assert.equal(YT.sanitizeHistory(Array.from({ length: 50 }, (_, i) => ({ list: 'PL' + i })), 24).length, 24);
   assert.equal(YT.historyKey({ id: ID, list: LIST }), `v:${ID}`);
+  assert.equal(YT.sanitizeEntry({ list: '<bad>' }), null);
+  assert.equal(YT.sanitizeEntry('nope'), null);
+  assert.deepEqual(YT.sanitizeEntry({ id: ID, title: ' Hi ', extra: 'dropped' }, now), { id: ID, list: null, start: 0, short: false, at: now, title: 'Hi' });
   assert.equal(YT.historyKey({ id: null, list: LIST }), `l:${LIST}`);
 });

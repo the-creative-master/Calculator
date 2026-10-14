@@ -5,7 +5,7 @@
   "description": "A clean, fast calculator, with a little secret.",
   "scripts": {
     "start": "node scripts/serve.js",
-    "test": "node --test tests/calculator.test.js tests/youtube.test.js"
+    "test": "node --test tests/calculator.test.js tests/youtube.test.js tests/library.test.js"
   },
   "engines": {
     "node": ">=18"

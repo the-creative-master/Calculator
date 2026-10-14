@@ -1,5 +1,5 @@
 /*!
- * TubeVault: YouTube link parsing, embed URLs, player messages and watch history.
+ * TubeVault: YouTube link parsing, embed URLs, player messages and saved-entry cleaning.
  * Pure functions, no DOM. In the browser it's exposed as `window.TubeVaultYT`; in Node it's
  * `module.exports` (for the tests).
  */
@@ -180,6 +180,10 @@
       if (Number.isInteger(code)) result.error = code;
       return result;
     }
+    if (message.event === 'onStateChange') {
+      if (isPlayerState(message.info)) result.state = message.info;
+      return result;
+    }
 
     const info = message.info && typeof message.info === 'object' ? message.info : null;
     if (!info) return result;
@@ -199,7 +203,16 @@
       result.currentTime = info.currentTime;
     }
     if (Array.isArray(info.playlist) && info.playlist.length) result.playlistCount = info.playlist.length;
+    if (Number.isInteger(info.playlistIndex) && info.playlistIndex >= 0 && info.playlistIndex < 100000) {
+      result.playlistIndex = info.playlistIndex;
+    }
+    // -1 unstarted, 0 ended, 1 playing, 2 paused, 3 buffering, 5 cued
+    if (isPlayerState(info.playerState)) result.state = info.playerState;
     return result;
+  }
+
+  function isPlayerState(value) {
+    return Number.isInteger(value) && value >= -1 && value <= 5;
   }
 
   /** YouTube-style relative time: "just now", "5 minutes ago", "1 day ago", "3 weeks ago"… */
@@ -228,34 +241,42 @@
   const toCount = (value) => (Number.isFinite(Number(value)) && Number(value) > 0 ? Math.floor(Number(value)) : 0);
 
   /**
-   * Cleans watch history read from localStorage, which anything could have written to.
-   * Keeps only valid IDs and known fields, drops duplicates and caps the length.
+   * Cleans one saved video or playlist (a watch-history or library entry) read from
+   * localStorage, which anything could have written to. Keeps only valid IDs and known
+   * fields. Returns null if there's nothing playable in it.
    */
+  function sanitizeEntry(item, now = Date.now()) {
+    if (!item || typeof item !== 'object') return null;
+    const id = isVideoId(item.id) ? item.id : null;
+    const listId = isListId(item.list) ? item.list : null;
+    if (!id && !listId) return null;
+    const entry = {
+      id,
+      list: listId,
+      start: toCount(item.start),
+      short: item.short === true,
+      at: toCount(item.at) || now,
+    };
+    const title = cleanText(item.title, 200);
+    if (title) entry.title = title;
+    const author = cleanText(item.author, 100);
+    if (author) entry.author = author;
+    if (item.live === true) entry.live = true;
+    else if (toCount(item.duration) && toCount(item.duration) < 1e7) entry.duration = toCount(item.duration);
+    if (!id && isVideoId(item.thumb)) entry.thumb = item.thumb;
+    if (toCount(item.count) && toCount(item.count) < 100000) entry.count = toCount(item.count);
+    return entry;
+  }
+
+  /** Cleans a list of entries: drops broken ones and duplicates, and caps the length. */
   function sanitizeHistory(list, max = 24, now = Date.now()) {
     if (!Array.isArray(list)) return [];
     const seen = new Set();
     const clean = [];
     for (const item of list) {
       if (clean.length >= max) break;
-      if (!item || typeof item !== 'object') continue;
-      const id = isVideoId(item.id) ? item.id : null;
-      const listId = isListId(item.list) ? item.list : null;
-      if (!id && !listId) continue;
-      const entry = {
-        id,
-        list: listId,
-        start: toCount(item.start),
-        short: item.short === true,
-        at: toCount(item.at) || now,
-      };
-      const title = cleanText(item.title, 200);
-      if (title) entry.title = title;
-      const author = cleanText(item.author, 100);
-      if (author) entry.author = author;
-      if (item.live === true) entry.live = true;
-      else if (toCount(item.duration) && toCount(item.duration) < 1e7) entry.duration = toCount(item.duration);
-      if (!id && isVideoId(item.thumb)) entry.thumb = item.thumb;
-      if (toCount(item.count) && toCount(item.count) < 100000) entry.count = toCount(item.count);
+      const entry = sanitizeEntry(item, now);
+      if (!entry) continue;
       const key = historyKey(entry);
       if (seen.has(key)) continue;
       seen.add(key);
@@ -276,6 +297,7 @@
     readPlayerMessage,
     timeAgo,
     historyKey,
+    sanitizeEntry,
     sanitizeHistory,
     isVideoId,
     isListId,
