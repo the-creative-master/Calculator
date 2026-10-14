@@ -54,17 +54,20 @@ YouTube embeds need the default `strict-origin-when-cross-origin`.
 npm test
 ```
 
-Uses Node's built-in test runner to cover the calculator engine and the YouTube link parser.
+Uses Node's built-in test runner to cover the calculator engine and the YouTube helpers (link
+parsing, embed URLs, reading the player's messages and cleaning saved history).
 
 ## Project layout
 
 ```
 index.html            page markup and inline SVG icons
-css/styles.css        themes, layout and animations
+css/styles.css        calculator themes, layout and animations
+css/tubevault.css     the vault's YouTube-style look
 js/calculator.js      calculator engine (no DOM, unit tested)
-js/youtube.js         YouTube link parser and embed URLs (no DOM, unit tested)
+js/youtube.js         YouTube links, embed URLs, player messages, history (no DOM, unit tested)
 js/app.js             UI: keypad, keyboard, theme and the vault
 assets/               app icons
+assets/fonts/         Roboto (SIL Open Font License, see OFL.txt)
 scripts/serve.js      tiny zero-dependency static server for `npm start`
 tests/                node --test suites
 ```
@@ -76,20 +79,25 @@ tests/                node --test suites
 
 Switch to **light mode**, then press **`2`**, **`5`**, **`+`**. The calculator opens **TubeVault**.
 
-TubeVault is a private little YouTube player. Paste a link and it plays right there using
-YouTube's official embedded player.
+TubeVault looks and works like YouTube, but it only plays links you paste, using YouTube's
+official embedded player.
 
-- Works with normal videos, `youtu.be` links, Shorts, live links, playlists, embed links and
-  links with timestamps (`?t=90`, `&t=1m30s`). You can even paste a whole message that
-  contains a link.
-- Paste anywhere on the page (or press `/` to jump to the link box).
-- **Private** (on by default) plays through `youtube-nocookie.com`, YouTube's privacy-enhanced mode.
-  Turn it off to use regular `youtube.com` embeds (for example, if you want your YouTube login
-  to apply).
-- **Recently played** remembers your last 12 links. They're stored only in your browser
-  (`localStorage`), and you can remove them one by one or clear them all.
+- **Paste a link** into the search bar (or anywhere on the page, or press `/`). Works with normal
+  videos, `youtu.be` links, Shorts, live streams, playlists, embed links and timestamps
+  (`?t=90`, `&t=1m30s`). You can even paste a whole message that contains a link.
+- **Watch page:** the player with the video's title, channel and length underneath, plus
+  *Open in YouTube*, *Share* and *Close*. The details come from the player itself (no API key
+  needed), so they appear a moment after a video starts loading.
+- **Home:** your watch history as a YouTube-style feed, with *All / Videos / Shorts / Playlists*
+  filters. It keeps your last 24 videos, only in this browser (`localStorage`). Remove one with
+  its ✕ or clear everything from the ⋮ menu; both can be undone.
+- **⋮ Settings:**
+  - **Private mode** (on by default) plays through `youtube-nocookie.com`, YouTube's
+    privacy-enhanced mode. Turn it off to use regular `youtube.com` embeds (for example, if you
+    want your YouTube login to apply).
+  - **Appearance:** device theme, dark or light, like YouTube.
 - **Lock** (or `Esc`, or your browser's back button) instantly stops the video and returns to
-  the calculator.
+  the calculator. `Esc` works even with a menu open.
 
 The trigger only fires on a freshly typed `25` followed by `+`, so `125+` or `5 × 5 = +`
 won't open it. In dark mode, `25+` is just `25+`.

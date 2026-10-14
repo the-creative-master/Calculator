@@ -1,0 +1,1484 @@
+/* ==========================================================================
+   TubeVault: a private YouTube-style player (opened from the calculator)
+   ========================================================================== */
+
+/* Roboto, as on YouTube. Latin only; other scripts fall back to system fonts. */
+@font-face {
+  font-family: "TubeVault Roboto";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../assets/fonts/roboto-latin-400.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "TubeVault Roboto";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../assets/fonts/roboto-latin-500.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "TubeVault Roboto";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../assets/fonts/roboto-latin-700.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------- Themes ---------- */
+.vault {
+  /* Dark theme */
+  --yt-bg: #0f0f0f;
+  --yt-menu-bg: #282828;
+  --yt-text: #f1f1f1;
+  --yt-text-2: #aaaaaa;
+  --yt-text-3: #717171;
+  --yt-tonal: rgba(255, 255, 255, 0.1);
+  --yt-tonal-hover: rgba(255, 255, 255, 0.2);
+  --yt-hover: rgba(255, 255, 255, 0.1);
+  --yt-divider: rgba(255, 255, 255, 0.2);
+  --yt-border: #303030;
+  --yt-input-bg: #121212;
+  --yt-input-text: #f1f1f1;
+  --yt-placeholder: #888888;
+  --yt-search-btn: #222222;
+  --yt-search-btn-hover: #2c2c2c;
+  --yt-focus: #1c62b9;
+  --yt-blue: #3ea6ff;
+  --yt-signin-border: rgba(255, 255, 255, 0.2);
+  --yt-signin-hover: #263850;
+  --yt-primary-bg: #f1f1f1;
+  --yt-primary-text: #0f0f0f;
+  --yt-primary-hover: #d9d9d9;
+  --yt-snack-bg: #f1f1f1;
+  --yt-snack-text: #0f0f0f;
+  --yt-snack-action: #065fd4;
+  --yt-snack-action-hover: rgba(6, 95, 212, 0.1);
+  --yt-thumb-bg: #272727;
+  --yt-error: #ff4e45;
+  --yt-tooltip: rgba(97, 97, 97, 0.96);
+  --yt-scrim: rgba(0, 0, 0, 0.5);
+  --yt-font: "TubeVault Roboto", Roboto, Arial, sans-serif;
+  --yt-masthead: 56px;
+
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  color-scheme: dark;
+  background: var(--yt-bg);
+  color: var(--yt-text);
+  font-family: var(--yt-font);
+  font-size: 14px;
+  line-height: 20px;
+  -webkit-font-smoothing: antialiased;
+  visibility: hidden;
+  clip-path: circle(0 at var(--origin-x, 50%) var(--origin-y, 50%));
+}
+
+.vault[data-yt-theme="light"] {
+  --yt-bg: #ffffff;
+  --yt-menu-bg: #ffffff;
+  --yt-text: #0f0f0f;
+  --yt-text-2: #606060;
+  --yt-text-3: #909090;
+  --yt-tonal: rgba(0, 0, 0, 0.05);
+  --yt-tonal-hover: rgba(0, 0, 0, 0.1);
+  --yt-hover: rgba(0, 0, 0, 0.05);
+  --yt-divider: rgba(0, 0, 0, 0.1);
+  --yt-border: #d3d3d3;
+  --yt-input-bg: #ffffff;
+  --yt-input-text: #0f0f0f;
+  --yt-placeholder: #888888;
+  --yt-search-btn: #f8f8f8;
+  --yt-search-btn-hover: #efefef;
+  --yt-blue: #065fd4;
+  --yt-signin-border: rgba(0, 0, 0, 0.1);
+  --yt-signin-hover: #def1ff;
+  --yt-primary-bg: #0f0f0f;
+  --yt-primary-text: #ffffff;
+  --yt-primary-hover: #272727;
+  --yt-snack-bg: #0f0f0f;
+  --yt-snack-text: #f1f1f1;
+  --yt-snack-action: #3ea6ff;
+  --yt-snack-action-hover: rgba(62, 166, 255, 0.15);
+  --yt-thumb-bg: #e5e5e5;
+  --yt-error: #cc0000;
+
+  color-scheme: light;
+}
+
+/* Opens as a circle growing out of the "+" key */
+.vault.is-open {
+  visibility: visible;
+  clip-path: circle(150vmax at var(--origin-x, 50%) var(--origin-y, 50%));
+  transition: clip-path 0.8s var(--ease-in-out);
+}
+
+/* Closes with a quick fade, so locking is instant */
+.vault.is-closing {
+  visibility: visible;
+  clip-path: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+@keyframes yt-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes yt-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.vault.is-open .yt-masthead {
+  animation: yt-fade 0.5s ease 0.15s both;
+}
+
+.vault.is-open .yt-page {
+  animation: yt-rise 0.6s var(--ease-out) 0.25s both;
+}
+
+/* ---------- Basics ---------- */
+.vault .icon {
+  stroke-width: 1.75;
+}
+
+:where(.vault) button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+:where(.vault) :focus-visible {
+  outline: 2px solid var(--yt-text);
+  outline-offset: 2px;
+}
+
+:where(.vault) h1,
+:where(.vault) h2,
+:where(.vault) h3,
+:where(.vault) p {
+  margin: 0;
+}
+
+.vault kbd {
+  display: inline-block;
+  min-width: 20px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--yt-tonal);
+  color: var(--yt-text);
+  font: 500 11px/14px var(--yt-font);
+  text-align: center;
+}
+
+.yt-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--yt-text);
+  transition: background-color 0.1s ease;
+}
+
+.yt-icon-btn:hover {
+  background: var(--yt-hover);
+}
+
+.yt-icon-btn:active {
+  background: var(--yt-tonal-hover);
+}
+
+.yt-icon-btn--tonal {
+  background: var(--yt-tonal);
+}
+
+.yt-icon-btn--tonal:hover {
+  background: var(--yt-tonal-hover);
+}
+
+/* Pill buttons ("Subscribe", "Share"…) */
+.yt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: none;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 18px;
+  background: var(--yt-tonal);
+  color: var(--yt-text);
+  font: 500 14px/36px var(--yt-font);
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background-color 0.1s ease;
+}
+
+.yt-btn:hover {
+  background: var(--yt-tonal-hover);
+}
+
+.yt-btn .icon {
+  width: 24px;
+  height: 24px;
+  margin-left: -6px;
+}
+
+.yt-btn--primary {
+  background: var(--yt-primary-bg);
+  color: var(--yt-primary-text);
+}
+
+.yt-btn--primary:hover {
+  background: var(--yt-primary-hover);
+}
+
+/* ---------- Masthead ---------- */
+.yt-masthead {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: var(--yt-masthead);
+  padding: 0 16px;
+  background: var(--yt-bg);
+}
+
+.yt-masthead__start,
+.yt-masthead__end {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
+.yt-masthead__end {
+  gap: 8px;
+}
+
+.yt-masthead__start {
+  gap: 0;
+}
+
+.yt-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 40px;
+  padding: 0 14px 0 16px;
+  border-radius: 8px;
+  color: var(--yt-text);
+}
+
+.yt-logo__mark {
+  width: 30px;
+  height: 21px;
+  flex: none;
+}
+
+.yt-logo__text {
+  font: 700 19px/1 var(--yt-font);
+  letter-spacing: -0.9px;
+  white-space: nowrap;
+}
+
+.yt-masthead__center {
+  display: flex;
+  align-items: center;
+  flex: 0 1 732px;
+  min-width: 0;
+}
+
+.yt-masthead__back,
+.yt-masthead__search {
+  display: none;
+}
+
+.yt-masthead__paste {
+  margin-left: 12px;
+}
+
+/* Search box (here it's for links) */
+.yt-search {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+}
+
+.yt-search__box {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  margin-left: 32px;
+  padding: 0 4px 0 16px;
+  border: 1px solid var(--yt-border);
+  border-right: 0;
+  border-radius: 40px 0 0 40px;
+  background: var(--yt-input-bg);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.vault[data-yt-theme="light"] .yt-search__box {
+  box-shadow: inset 0 1px 2px #eeeeee;
+}
+
+/* Like YouTube: on focus the box grows to the left and shows a search icon */
+.yt-search__box:focus-within {
+  margin-left: 0;
+  padding-left: 16px;
+  border-color: var(--yt-focus);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.yt-search__lead {
+  display: none;
+  width: 20px;
+  height: 20px;
+  margin-right: 12px;
+}
+
+.yt-search__box:focus-within .yt-search__lead {
+  display: block;
+}
+
+.yt-search__input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--yt-input-text);
+  font: 400 16px/22px var(--yt-font);
+}
+
+.yt-search__input::placeholder {
+  color: var(--yt-placeholder);
+  opacity: 1;
+}
+
+.yt-search__clear {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.yt-search__clear:hover {
+  background: var(--yt-hover);
+}
+
+.yt-search__clear .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.yt-search__clear[hidden] {
+  display: none;
+}
+
+.yt-search__submit {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 64px;
+  height: 40px;
+  border: 1px solid var(--yt-border);
+  border-radius: 0 40px 40px 0;
+  background: var(--yt-search-btn);
+}
+
+.yt-search__submit:hover {
+  background: var(--yt-search-btn-hover);
+}
+
+.yt-search.is-error .yt-search__box {
+  border-color: var(--yt-error);
+}
+
+@keyframes yt-shake {
+  0%,
+  100% {
+    transform: none;
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+.yt-search.is-shaking {
+  animation: yt-shake 0.4s ease;
+}
+
+/* Error message, styled like a YouTube tooltip */
+.yt-search__error {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 32px;
+  z-index: 30;
+  max-width: min(440px, calc(100vw - 32px));
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--yt-tooltip);
+  color: #ffffff;
+  font: 400 13px/18px var(--yt-font);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* "Sign in"-style button, used for Lock */
+.yt-signin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 15px 0 11px;
+  border: 1px solid var(--yt-signin-border);
+  border-radius: 18px;
+  color: var(--yt-blue);
+  font: 500 14px/34px var(--yt-font);
+  white-space: nowrap;
+  transition: background-color 0.1s ease;
+}
+
+.yt-signin:hover {
+  border-color: transparent;
+  background: var(--yt-signin-hover);
+}
+
+/* ---------- Mini guide (desktop) / bottom bar (phones) ---------- */
+.yt-rail {
+  display: none;
+}
+
+.yt-rail__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 64px;
+  height: 74px;
+  padding: 16px 0 14px;
+  border-radius: 10px;
+  color: var(--yt-text);
+  font: 400 10px/14px var(--yt-font);
+}
+
+.yt-rail__item:hover {
+  background: var(--yt-hover);
+}
+
+.yt-rail__item .icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Filled icons for the current page and for Private mode when it's on */
+.yt-rail__item.is-active .icon,
+.yt-guide__item.is-active .icon,
+.yt-rail__item[aria-pressed="true"] .icon {
+  fill: currentColor;
+}
+
+/* ---------- Page ---------- */
+.yt-page {
+  min-height: calc(100% - var(--yt-masthead));
+}
+
+.yt-home {
+  padding: 0 24px 48px;
+}
+
+/* Filter chips */
+.yt-chips {
+  position: sticky;
+  top: var(--yt-masthead);
+  z-index: 5;
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  overflow-x: auto;
+  background: var(--yt-bg);
+  scrollbar-width: none;
+}
+
+.yt-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.yt-chip {
+  flex: none;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: var(--yt-tonal);
+  color: var(--yt-text);
+  font: 500 14px/32px var(--yt-font);
+  white-space: nowrap;
+  transition: background-color 0.1s ease;
+}
+
+.yt-chip:hover {
+  background: var(--yt-tonal-hover);
+}
+
+.yt-chip[aria-pressed="true"] {
+  background: var(--yt-text);
+  color: var(--yt-bg);
+}
+
+/* Video grid */
+.yt-feed {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 40px 16px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.yt-feed-note,
+.yt-upnext__note {
+  padding: 48px 16px;
+  color: var(--yt-text-2);
+  text-align: center;
+}
+
+.yt-upnext__note {
+  padding: 8px 0;
+  text-align: left;
+}
+
+/* ---------- Video cards ---------- */
+.yt-card {
+  position: relative;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.yt-card__thumb {
+  display: block;
+  width: 100%;
+  border-radius: 12px;
+}
+
+.yt-thumb {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  background: var(--yt-thumb-bg);
+}
+
+.yt-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* hqdefault has black bars top and bottom: zoom in a touch so no sliver of them shows */
+.yt-thumb img.is-letterboxed {
+  transform: scale(1.02);
+}
+
+.yt-thumb__placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--yt-text-2);
+}
+
+.yt-thumb__placeholder .icon {
+  width: 36%;
+  max-width: 48px;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.yt-thumb__badge {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 8px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #ffffff;
+  font: 500 12px/18px var(--yt-font);
+}
+
+.yt-thumb__badge .icon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+}
+
+.yt-thumb__badge--live {
+  background: #cc0000;
+}
+
+.yt-card__body {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 12px 24px 0 0;
+}
+
+.yt-card__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.yt-card__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  max-height: 44px;
+  margin-bottom: 4px;
+  color: var(--yt-text);
+  font: 500 16px/22px var(--yt-font);
+  overflow-wrap: anywhere;
+}
+
+.yt-card__channel,
+.yt-card__meta {
+  overflow: hidden;
+  color: var(--yt-text-2);
+  font: 400 14px/20px var(--yt-font);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.yt-card__remove {
+  position: absolute;
+  top: 6px;
+  right: -12px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--yt-text);
+  opacity: 0;
+  transition: opacity 0.1s ease, background-color 0.1s ease;
+}
+
+.yt-card__remove:hover {
+  background: var(--yt-hover);
+}
+
+.yt-card__remove .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.yt-card:hover .yt-card__remove,
+.yt-card:focus-within .yt-card__remove {
+  opacity: 1;
+}
+
+/* Avatars: a letter on a colour, like YouTube's default channel pictures */
+.yt-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--avatar-bg, #ff0033);
+  color: #ffffff;
+  font: 500 16px/1 var(--yt-font);
+  text-transform: uppercase;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.yt-avatar .icon {
+  width: 42%;
+  height: 42%;
+  margin-left: 6%;
+}
+
+.yt-avatar--40 {
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+}
+
+/* Compact cards (the list next to the player) */
+.yt-upnext {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.yt-card--compact {
+  display: flex;
+  gap: 8px;
+}
+
+.yt-card--compact .yt-card__thumb {
+  flex: none;
+  width: 168px;
+  border-radius: 8px;
+}
+
+.yt-card--compact .yt-thumb {
+  border-radius: 8px;
+}
+
+.yt-card--compact .yt-thumb__badge {
+  margin: 4px;
+}
+
+.yt-card--compact .yt-card__body {
+  flex: 1;
+  min-width: 0;
+  padding: 0 24px 0 0;
+}
+
+.yt-card--compact .yt-card__title {
+  max-height: 40px;
+  font: 500 14px/20px var(--yt-font);
+}
+
+.yt-card--compact .yt-card__channel,
+.yt-card--compact .yt-card__meta {
+  font: 400 12px/18px var(--yt-font);
+}
+
+.yt-card--compact .yt-card__remove {
+  top: -6px;
+}
+
+/* Empty home */
+.yt-empty {
+  display: grid;
+  place-items: center;
+  min-height: calc(100vh - var(--yt-masthead) - 48px);
+  min-height: calc(100dvh - var(--yt-masthead) - 48px);
+  padding: 24px 0;
+}
+
+.yt-empty__card {
+  max-width: 560px;
+  padding: 28px 32px 32px;
+  border-radius: 12px;
+  background: var(--yt-tonal);
+  text-align: center;
+}
+
+.yt-empty__title {
+  margin-bottom: 8px;
+  font: 700 20px/28px var(--yt-font);
+}
+
+.yt-empty__text {
+  margin-bottom: 20px;
+  color: var(--yt-text-2);
+}
+
+/* ---------- Watch page ---------- */
+.yt-watch {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  max-width: 1754px;
+  margin: 0 auto;
+  padding: 24px 24px 48px;
+}
+
+.yt-watch__primary {
+  flex: 1 1 0;
+  min-width: 0;
+  /* Like YouTube: the player never gets taller than the window allows */
+  max-width: max(480px, calc((100vh - var(--yt-masthead) - 24px - 136px) * 16 / 9));
+  max-width: max(480px, calc((100dvh - var(--yt-masthead) - 24px - 136px) * 16 / 9));
+}
+
+.yt-watch__secondary {
+  flex: 0 0 402px;
+  min-width: 0;
+}
+
+.yt-player {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  background: #000000;
+}
+
+.yt-player.is-short {
+  aspect-ratio: 9 / 16;
+  width: min(100%, calc((100vh - var(--yt-masthead) - 48px) * 9 / 16));
+  width: min(100%, calc((100dvh - var(--yt-masthead) - 48px) * 9 / 16));
+  margin: 0 auto;
+}
+
+.yt-player__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.yt-watch__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-top: 12px;
+  font: 700 20px/28px var(--yt-font);
+  overflow-wrap: anywhere;
+}
+
+.yt-owner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.yt-owner__channel {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.yt-owner__channel .yt-avatar {
+  margin-right: 12px;
+}
+
+.yt-owner__text {
+  min-width: 0;
+  margin-right: 24px;
+}
+
+.yt-owner__name {
+  overflow: hidden;
+  font: 500 16px/22px var(--yt-font);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.yt-owner__sub {
+  color: var(--yt-text-2);
+  font: 400 12px/18px var(--yt-font);
+  white-space: nowrap;
+}
+
+.yt-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.yt-desc {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--yt-tonal);
+}
+
+.yt-desc__meta {
+  font-weight: 500;
+}
+
+.yt-desc__line {
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.yt-desc__link {
+  color: var(--yt-blue);
+  text-decoration: none;
+}
+
+.yt-desc__link:hover {
+  text-decoration: underline;
+}
+
+.yt-watch__heading {
+  margin-bottom: 12px;
+  font: 700 16px/22px var(--yt-font);
+}
+
+/* ---------- Settings menu ---------- */
+.yt-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+}
+
+.yt-menu {
+  position: fixed;
+  z-index: 40;
+  width: 300px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 72px);
+  max-height: calc(100dvh - 72px);
+  overflow-y: auto;
+  padding: 8px 0;
+  border-radius: 12px;
+  background: var(--yt-menu-bg);
+  color: var(--yt-text);
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.1);
+}
+
+.vault[data-yt-theme="dark"] .yt-menu {
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.4);
+}
+
+.yt-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 16px;
+  font: 400 14px/20px var(--yt-font);
+}
+
+.yt-menu__item:hover,
+.yt-menu__item:focus-visible {
+  background: var(--yt-hover);
+  outline: 0;
+}
+
+.yt-menu__label {
+  flex: 1;
+  min-width: 0;
+}
+
+.yt-menu__chevron {
+  margin-right: -4px;
+}
+
+.yt-menu__check {
+  visibility: hidden;
+}
+
+.yt-menu__item[aria-pressed="true"] .yt-menu__check {
+  visibility: visible;
+}
+
+.yt-menu__divider {
+  height: 1px;
+  margin: 8px 0;
+  border: 0;
+  background: var(--yt-divider);
+}
+
+.yt-menu__hint {
+  padding: 4px 16px;
+  color: var(--yt-text-2);
+  font: 400 12px/24px var(--yt-font);
+}
+
+.yt-menu__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 8px;
+  border-bottom: 1px solid var(--yt-divider);
+  font: 400 16px/22px var(--yt-font);
+}
+
+.yt-menu__note {
+  padding: 12px 16px 8px;
+  color: var(--yt-text-2);
+  font: 400 12px/18px var(--yt-font);
+}
+
+/* ---------- Side menu ---------- */
+.yt-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--yt-scrim);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0s linear 0.2s;
+}
+
+.yt-guide {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 51;
+  display: flex;
+  flex-direction: column;
+  width: 240px;
+  padding: 0 12px 12px;
+  overflow-y: auto;
+  background: var(--yt-bg);
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition: transform 0.2s ease, visibility 0s linear 0.2s;
+}
+
+.vault.is-guide-open .yt-scrim {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.2s ease;
+}
+
+.vault.is-guide-open .yt-guide {
+  transform: none;
+  visibility: visible;
+  transition: transform 0.25s var(--ease-out);
+}
+
+.yt-guide__head {
+  display: flex;
+  align-items: center;
+  flex: none;
+  height: var(--yt-masthead);
+  padding-left: 4px;
+}
+
+.yt-guide__section {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--yt-divider);
+}
+
+.yt-guide__section:last-of-type {
+  border-bottom: 0;
+}
+
+.yt-guide__title {
+  padding: 6px 12px 4px;
+  font: 700 16px/22px var(--yt-font);
+}
+
+.yt-guide__item {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font: 400 14px/20px var(--yt-font);
+}
+
+.yt-guide__item:hover {
+  background: var(--yt-hover);
+}
+
+.yt-guide__item.is-active {
+  background: var(--yt-tonal);
+  font-weight: 500;
+}
+
+.yt-guide__aside {
+  margin-left: auto;
+  color: var(--yt-text-2);
+  font-size: 12px;
+}
+
+.yt-guide__footer {
+  margin-top: auto;
+  padding: 16px 12px 4px;
+  color: var(--yt-text-3);
+  font: 400 12px/18px var(--yt-font);
+}
+
+/* ---------- Snackbar ---------- */
+.yt-snackbar {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 288px;
+  max-width: min(568px, calc(100vw - 24px));
+  min-height: 48px;
+  padding: 6px 8px 6px 16px;
+  border-radius: 8px;
+  background: var(--yt-snack-bg);
+  color: var(--yt-snack-text);
+  font: 400 14px/20px var(--yt-font);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transform: translateY(calc(100% + 40px));
+  visibility: hidden;
+  transition: transform 0.2s ease, visibility 0s linear 0.2s;
+}
+
+.yt-snackbar.is-visible {
+  transform: none;
+  visibility: visible;
+  transition: transform 0.25s var(--ease-out);
+}
+
+.yt-snackbar__text {
+  flex: 1;
+  padding: 8px 0;
+}
+
+.yt-snackbar__action {
+  flex: none;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 18px;
+  color: var(--yt-snack-action);
+  font: 500 14px/36px var(--yt-font);
+  white-space: nowrap;
+}
+
+.yt-snackbar__action:hover {
+  background: var(--yt-snack-action-hover);
+}
+
+.yt-snackbar__action[hidden] {
+  display: none;
+}
+
+/* ==========================================================================
+   Layouts
+   ========================================================================== */
+
+/* Mini guide down the left on the home page */
+@media (min-width: 792px) {
+  .vault:not(.is-watching) .yt-rail {
+    position: fixed;
+    top: var(--yt-masthead);
+    bottom: 0;
+    left: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 72px;
+    padding: 4px;
+    background: var(--yt-bg);
+  }
+
+  .vault:not(.is-watching) .yt-home {
+    margin-left: 72px;
+  }
+}
+
+/* One column on the watch page */
+@media (max-width: 1015px) {
+  .yt-watch {
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  .yt-watch__primary {
+    flex: none;
+    max-width: none;
+  }
+
+  .yt-watch__secondary {
+    flex: none;
+  }
+}
+
+/* Phones and small tablets: the shortcuts become a bottom bar */
+@media (max-width: 791px) {
+  .vault:not(.is-watching) .yt-rail {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    height: calc(48px + env(safe-area-inset-bottom));
+    padding: 0 0 env(safe-area-inset-bottom);
+    border-top: 1px solid var(--yt-divider);
+    background: var(--yt-bg);
+  }
+
+  .yt-rail__item {
+    flex: 1;
+    gap: 2px;
+    width: auto;
+    height: 48px;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  .vault:not(.is-watching) .yt-home {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+
+  .vault:not(.is-watching) .yt-snackbar {
+    bottom: calc(60px + env(safe-area-inset-bottom));
+  }
+
+  .yt-feed {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+/* Phones */
+@media (max-width: 656px) {
+  .vault {
+    --yt-masthead: 48px;
+  }
+
+  .yt-masthead {
+    gap: 4px;
+    padding: 0 4px 0 12px;
+  }
+
+  .yt-masthead__guide,
+  .yt-masthead__paste,
+  .yt-masthead__center {
+    display: none;
+  }
+
+  .yt-masthead__end {
+    gap: 0;
+  }
+
+  .yt-masthead__search {
+    display: inline-grid;
+  }
+
+  .yt-logo {
+    padding: 0 8px 0 0;
+  }
+
+  .yt-signin {
+    margin-left: 4px;
+  }
+
+  /* Tapping the search icon turns the bar into a full-width link box */
+  .vault.is-search-open .yt-masthead__start,
+  .vault.is-search-open .yt-masthead__end {
+    display: none;
+  }
+
+  .vault.is-search-open .yt-masthead__center {
+    display: flex;
+    flex: 1;
+    gap: 4px;
+    padding-right: 8px;
+  }
+
+  .vault.is-search-open .yt-masthead__back {
+    display: inline-grid;
+    margin-left: -8px;
+  }
+
+  .yt-search {
+    height: 36px;
+  }
+
+  .yt-search__box,
+  .yt-search__box:focus-within {
+    margin-left: 0;
+    padding-left: 14px;
+  }
+
+  .yt-search__box:focus-within .yt-search__lead {
+    display: none;
+  }
+
+  .yt-search__submit {
+    width: 48px;
+    height: 36px;
+  }
+
+  .yt-search__error {
+    left: 0;
+  }
+
+  .yt-home {
+    padding: 0 0 48px;
+  }
+
+  .yt-chips {
+    padding: 12px;
+  }
+
+  /* Full-width cards, like the YouTube app */
+  .yt-feed {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    margin-top: 0;
+  }
+
+  .yt-feed .yt-card__thumb,
+  .yt-feed .yt-thumb {
+    border-radius: 0;
+  }
+
+  .yt-feed .yt-card__body {
+    padding: 12px 36px 0 12px;
+  }
+
+  .yt-feed .yt-card__remove {
+    right: 0;
+  }
+
+  .yt-card__title {
+    font-size: 15px;
+    line-height: 21px;
+    max-height: 42px;
+  }
+
+  .yt-card__channel,
+  .yt-card__meta {
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .yt-empty {
+    padding: 24px 12px;
+  }
+
+  .yt-empty__card {
+    padding: 24px 20px;
+  }
+
+  .yt-watch {
+    gap: 16px;
+    padding: 0 0 32px;
+  }
+
+  .yt-player {
+    border-radius: 0;
+  }
+
+  .yt-player.is-short {
+    width: min(100% - 48px, calc((100vh - var(--yt-masthead) - 200px) * 9 / 16));
+    width: min(100% - 48px, calc((100dvh - var(--yt-masthead) - 200px) * 9 / 16));
+    margin-top: 12px;
+    border-radius: 12px;
+  }
+
+  .yt-watch__title,
+  .yt-owner,
+  .yt-desc,
+  .yt-watch__secondary {
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+
+  .yt-watch__title {
+    font-size: 18px;
+    line-height: 26px;
+  }
+
+  .yt-owner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .yt-owner__channel .yt-btn {
+    margin-left: auto;
+  }
+
+  .yt-actions {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .yt-snackbar {
+    left: 8px;
+    right: 8px;
+    bottom: 12px;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .yt-card--compact .yt-card__thumb {
+    width: 160px;
+  }
+}
+
+@media (max-width: 380px) {
+  .yt-signin span {
+    display: none;
+  }
+
+  .yt-signin {
+    padding: 0 7px;
+  }
+
+  .yt-card--compact .yt-card__thumb {
+    width: 136px;
+  }
+}
+
+/* Touch screens: no hover, so keep "remove" buttons visible and hide keyboard tips */
+@media (hover: none) {
+  .yt-card__remove {
+    opacity: 1;
+  }
+
+  .yt-menu__keys {
+    display: none;
+  }
+}

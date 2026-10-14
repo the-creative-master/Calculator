@@ -1,6 +1,7 @@
 /*!
- * TubeVault: YouTube link parsing and embed URLs. Pure functions, no DOM.
- * In the browser it's exposed as `window.TubeVaultYT`; in Node it's `module.exports` (for the tests).
+ * TubeVault: YouTube link parsing, embed URLs, player messages and watch history.
+ * Pure functions, no DOM. In the browser it's exposed as `window.TubeVaultYT`; in Node it's
+ * `module.exports` (for the tests).
  */
 (function (root, factory) {
   'use strict';
@@ -103,9 +104,17 @@
     return { ok: true, video: { id, list, start, short } };
   }
 
-  /** The URL that goes in the <iframe>. Private mode uses youtube-nocookie.com (YouTube's privacy-enhanced embed). */
+  /** Where the player lives. Private mode uses youtube-nocookie.com (YouTube's privacy-enhanced embed). */
+  function embedOrigin(privacy) {
+    return privacy === false ? 'https://www.youtube.com' : 'https://www.youtube-nocookie.com';
+  }
+
+  /**
+   * The URL that goes in the <iframe>.
+   * options: { privacy, autoplay, origin (this page's origin), widgetId (a number for this player) }
+   * enablejsapi=1 lets the player report the title, channel and duration back (see readPlayerMessage).
+   */
   function embedUrl(video, options = {}) {
-    const origin = options.privacy === false ? 'https://www.youtube.com' : 'https://www.youtube-nocookie.com';
     const path = video.id ? '/embed/' + video.id : '/embed/videoseries';
     const query = new URLSearchParams();
     if (video.list) query.set('list', video.list);
@@ -113,10 +122,15 @@
     if (options.autoplay) query.set('autoplay', '1');
     query.set('rel', '0');
     query.set('playsinline', '1');
-    return `${origin}${path}?${query}`;
+    query.set('enablejsapi', '1');
+    if (typeof options.origin === 'string' && /^https?:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(options.origin)) {
+      query.set('origin', options.origin);
+    }
+    if (Number.isInteger(options.widgetId) && options.widgetId > 0) query.set('widgetid', String(options.widgetId));
+    return `${embedOrigin(options.privacy)}${path}?${query}`;
   }
 
-  /** A normal youtube.com link to the same video, for "Open on YouTube" and "Copy link". */
+  /** A normal youtube.com link to the same video, for "Open in YouTube" and "Share". */
   function watchUrl(video) {
     if (!video.id) return 'https://www.youtube.com/playlist?list=' + encodeURIComponent(video.list);
     const query = new URLSearchParams({ v: video.id });
@@ -125,9 +139,145 @@
     return 'https://www.youtube.com/watch?' + query;
   }
 
-  function thumbnailUrl(id) {
-    return 'https://i.ytimg.com/vi/' + encodeURIComponent(id) + '/mqdefault.jpg';
+  const THUMBNAIL_QUALITIES = ['hq720', 'hqdefault', 'mqdefault'];
+
+  /**
+   * hq720 is a sharp 16:9 image (most videos have one). hqdefault always exists but is 4:3 with
+   * black bars top and bottom, so it's shown cropped.
+   */
+  function thumbnailUrl(id, quality = 'hqdefault') {
+    const name = THUMBNAIL_QUALITIES.includes(quality) ? quality : 'hqdefault';
+    return 'https://i.ytimg.com/vi/' + encodeURIComponent(id) + '/' + name + '.jpg';
   }
 
-  return { parse, parseTime, formatTime, embedUrl, watchUrl, thumbnailUrl, isVideoId, isListId };
+  /** Text from outside (the player, localStorage): no control characters, tidy spaces, limited length. */
+  function cleanText(value, max = 200) {
+    if (typeof value !== 'string') return '';
+    // eslint-disable-next-line no-control-regex
+    return value.replace(/[\u0000-\u001f\u007f-\u009f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+  }
+
+  /**
+   * Reads a message posted by the embedded player. It only talks once the URL has enablejsapi=1 and
+   * the page has sent it {"event":"listening"}. Returns null for anything that isn't a player message.
+   *   → { event, videoId?, title?, author?, duration?, live?, currentTime?, playlistCount?, error? }
+   */
+  function readPlayerMessage(data) {
+    let message = data;
+    if (typeof message === 'string') {
+      if (message.length > 1000000 || message.charAt(0) !== '{') return null;
+      try {
+        message = JSON.parse(message);
+      } catch (error) {
+        return null;
+      }
+    }
+    if (!message || typeof message !== 'object' || typeof message.event !== 'string') return null;
+
+    const result = { event: message.event };
+    if (message.event === 'onError') {
+      const code = Number(message.info);
+      if (Number.isInteger(code)) result.error = code;
+      return result;
+    }
+
+    const info = message.info && typeof message.info === 'object' ? message.info : null;
+    if (!info) return result;
+    const videoData = info.videoData && typeof info.videoData === 'object' ? info.videoData : null;
+    if (videoData) {
+      if (isVideoId(videoData.video_id)) result.videoId = videoData.video_id;
+      const title = cleanText(videoData.title, 200);
+      if (title) result.title = title;
+      const author = cleanText(videoData.author, 100);
+      if (author) result.author = author;
+      if (videoData.isLive === true) result.live = true;
+    }
+    if (typeof info.duration === 'number' && info.duration >= 1 && info.duration < 1e7) {
+      result.duration = Math.round(info.duration);
+    }
+    if (typeof info.currentTime === 'number' && info.currentTime >= 0 && info.currentTime < 1e7) {
+      result.currentTime = info.currentTime;
+    }
+    if (Array.isArray(info.playlist) && info.playlist.length) result.playlistCount = info.playlist.length;
+    return result;
+  }
+
+  /** YouTube-style relative time: "just now", "5 minutes ago", "1 day ago", "3 weeks ago"… */
+  function timeAgo(then, now = Date.now()) {
+    const seconds = Math.max(0, Math.floor((now - then) / 1000));
+    const units = [
+      ['year', 31536000],
+      ['month', 2592000],
+      ['week', 604800],
+      ['day', 86400],
+      ['hour', 3600],
+      ['minute', 60],
+    ];
+    for (const [unit, size] of units) {
+      const count = Math.floor(seconds / size);
+      if (count >= 1) return `${count} ${unit}${count === 1 ? '' : 's'} ago`;
+    }
+    return 'just now';
+  }
+
+  /** One history entry per video (or per playlist, for playlist-only links). */
+  function historyKey(item) {
+    return item.id ? 'v:' + item.id : 'l:' + item.list;
+  }
+
+  const toCount = (value) => (Number.isFinite(Number(value)) && Number(value) > 0 ? Math.floor(Number(value)) : 0);
+
+  /**
+   * Cleans watch history read from localStorage, which anything could have written to.
+   * Keeps only valid IDs and known fields, drops duplicates and caps the length.
+   */
+  function sanitizeHistory(list, max = 24, now = Date.now()) {
+    if (!Array.isArray(list)) return [];
+    const seen = new Set();
+    const clean = [];
+    for (const item of list) {
+      if (clean.length >= max) break;
+      if (!item || typeof item !== 'object') continue;
+      const id = isVideoId(item.id) ? item.id : null;
+      const listId = isListId(item.list) ? item.list : null;
+      if (!id && !listId) continue;
+      const entry = {
+        id,
+        list: listId,
+        start: toCount(item.start),
+        short: item.short === true,
+        at: toCount(item.at) || now,
+      };
+      const title = cleanText(item.title, 200);
+      if (title) entry.title = title;
+      const author = cleanText(item.author, 100);
+      if (author) entry.author = author;
+      if (item.live === true) entry.live = true;
+      else if (toCount(item.duration) && toCount(item.duration) < 1e7) entry.duration = toCount(item.duration);
+      if (!id && isVideoId(item.thumb)) entry.thumb = item.thumb;
+      if (toCount(item.count) && toCount(item.count) < 100000) entry.count = toCount(item.count);
+      const key = historyKey(entry);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      clean.push(entry);
+    }
+    return clean;
+  }
+
+  return {
+    parse,
+    parseTime,
+    formatTime,
+    embedOrigin,
+    embedUrl,
+    watchUrl,
+    thumbnailUrl,
+    cleanText,
+    readPlayerMessage,
+    timeAgo,
+    historyKey,
+    sanitizeHistory,
+    isVideoId,
+    isListId,
+  };
 });
