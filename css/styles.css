@@ -1,0 +1,577 @@
+/* ==========================================================================
+   Calculator
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --font: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display",
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --accent: #ff9f0a;
+}
+
+/* ---------- Dark theme (the default) ---------- */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b0c0f;
+  --glow-1: rgba(255, 159, 10, 0.14);
+  --glow-2: rgba(99, 102, 241, 0.16);
+  --card: rgba(21, 23, 28, 0.86);
+  --card-border: rgba(255, 255, 255, 0.07);
+  --card-shadow: 0 50px 100px -30px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --text: #f5f6f8;
+  --muted: #868b96;
+  --key: #23262d;
+  --key-hover: #2a2e36;
+  --key-active: #343943;
+  --key-text: #f5f6f8;
+  --key-fn: #2f333c;
+  --key-fn-hover: #373c46;
+  --key-fn-active: #424854;
+  --key-fn-text: #cfd3da;
+  --key-op: rgba(255, 159, 10, 0.15);
+  --key-op-hover: rgba(255, 159, 10, 0.22);
+  --key-op-active: rgba(255, 159, 10, 0.3);
+  --key-op-text: #ffac33;
+  --key-eq-text: #2b1800;
+  --key-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  --toggle-track: #23262d;
+  --toggle-thumb: #3b404b;
+}
+
+/* ---------- Light theme ---------- */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #e9ecf1;
+  --glow-1: rgba(255, 159, 10, 0.2);
+  --glow-2: rgba(99, 102, 241, 0.14);
+  --card: rgba(255, 255, 255, 0.82);
+  --card-border: rgba(15, 23, 42, 0.06);
+  --card-shadow: 0 50px 90px -40px rgba(30, 41, 59, 0.4), 0 2px 8px rgba(30, 41, 59, 0.05);
+  --text: #111318;
+  --muted: #6b7180;
+  --key: #f1f3f6;
+  --key-hover: #e9ecf0;
+  --key-active: #dfe3e9;
+  --key-text: #15171c;
+  --key-fn: #e3e6ec;
+  --key-fn-hover: #d9dde4;
+  --key-fn-active: #cfd4dc;
+  --key-fn-text: #3a4150;
+  --key-op: rgba(255, 149, 0, 0.13);
+  --key-op-hover: rgba(255, 149, 0, 0.2);
+  --key-op-active: rgba(255, 149, 0, 0.28);
+  --key-op-text: #e57a00;
+  --key-eq-text: #2b1800;
+  --key-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), inset 0 -1px 0 rgba(15, 23, 42, 0.04);
+  --toggle-track: #e3e6ec;
+  --toggle-thumb: #ffffff;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+
+body.is-vault-open {
+  overflow: hidden;
+}
+
+.sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.icon {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* Theme switch: a circular reveal via the View Transitions API (see app.js). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+.is-theme-switching *,
+.is-theme-switching *::before,
+.is-theme-switching *::after {
+  transition: none !important;
+}
+
+/* ==========================================================================
+   Calculator
+   ========================================================================== */
+
+.calc-screen {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  /* minmax(0, 1fr) stops a very long number from stretching the whole layout */
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px;
+  overflow: hidden;
+}
+
+/* Soft background glow */
+.calc-screen::before,
+.calc-screen::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 50%;
+  pointer-events: none;
+  transition: background 0.35s ease;
+}
+
+.calc-screen::before {
+  top: -30vmax;
+  right: -25vmax;
+  background: radial-gradient(closest-side, var(--glow-1), transparent);
+}
+
+.calc-screen::after {
+  bottom: -35vmax;
+  left: -30vmax;
+  background: radial-gradient(closest-side, var(--glow-2), transparent);
+}
+
+.calc {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 384px);
+  min-width: 0;
+  padding: 18px 20px 22px;
+  border: 1px solid var(--card-border);
+  border-radius: 38px;
+  background: var(--card);
+  box-shadow: var(--card-shadow);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+  transition: background-color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+.calc__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 4px 0 8px;
+}
+
+.calc__title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+}
+
+/* ---------- Theme toggle ---------- */
+.theme-toggle {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.theme-toggle__track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 64px;
+  height: 34px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--toggle-track);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.22);
+  transition: background-color 0.35s ease;
+}
+
+.theme-toggle__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--toggle-thumb);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  transition: transform 0.45s var(--ease-out), background-color 0.35s ease;
+}
+
+:root[data-theme="light"] .theme-toggle__thumb {
+  transform: translateX(30px);
+}
+
+.theme-toggle__icon {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.2;
+  color: var(--muted);
+  transition: color 0.35s ease, transform 0.45s var(--ease-out);
+}
+
+:root[data-theme="dark"] .theme-toggle__icon--moon {
+  color: #ffd27d;
+}
+
+:root[data-theme="light"] .theme-toggle__icon--sun {
+  color: #ff9500;
+  transform: rotate(90deg);
+}
+
+/* ---------- Display ---------- */
+.display {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 176px;
+  padding: 18px 8px 14px;
+  text-align: right;
+}
+
+.display__history,
+.display__preview {
+  display: flex;
+  justify-content: flex-end;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.display__history {
+  min-height: 26px;
+  font-size: 19px;
+  line-height: 26px;
+}
+
+.display__main {
+  --display-size: 66px;
+  min-height: calc(var(--display-size) * 1.18);
+  overflow-x: auto;
+  overflow-y: hidden;
+  font-size: calc(var(--display-size) * var(--fit, 1));
+  font-weight: 300;
+  line-height: 1.18;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  color: var(--text);
+  scrollbar-width: none;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.display__main::-webkit-scrollbar {
+  display: none;
+}
+
+.display__main.is-error {
+  letter-spacing: -0.01em;
+}
+
+.display__preview {
+  min-height: 30px;
+  margin-top: 2px;
+  font-size: 23px;
+  line-height: 30px;
+}
+
+/* ---------- Keypad ---------- */
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.key {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 24px;
+  background: var(--key);
+  box-shadow: var(--key-shadow);
+  color: var(--key-text);
+  font: inherit;
+  font-size: 29px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 0.18s ease, color 0.35s ease, box-shadow 0.35s ease, transform 0.16s var(--ease-out);
+}
+
+.key:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.key .icon {
+  width: 27px;
+  height: 27px;
+  stroke-width: 2.1;
+}
+
+.key--dot {
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.key--fn {
+  background: var(--key-fn);
+  color: var(--key-fn-text);
+  font-size: 23px;
+  font-weight: 600;
+}
+
+.key--fn .icon {
+  width: 25px;
+  height: 25px;
+}
+
+.key--op {
+  background: var(--key-op);
+  color: var(--key-op-text);
+}
+
+.key--op .icon {
+  width: 29px;
+  height: 29px;
+  stroke-width: 2.4;
+}
+
+.key--eq {
+  background: linear-gradient(160deg, #ffb547 0%, #ff8a00 100%);
+  box-shadow: 0 14px 30px -12px rgba(255, 138, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  color: var(--key-eq-text);
+}
+
+.key--eq .icon {
+  width: 30px;
+  height: 30px;
+  stroke-width: 2.6;
+}
+
+@media (hover: hover) {
+  .key:hover {
+    background-color: var(--key-hover);
+  }
+
+  .key--fn:hover {
+    background-color: var(--key-fn-hover);
+  }
+
+  .key--op:hover {
+    background-color: var(--key-op-hover);
+  }
+
+  .key--eq:hover {
+    filter: brightness(1.06);
+  }
+}
+
+.key:active,
+.key.is-pressed {
+  transform: scale(0.93);
+  background-color: var(--key-active);
+  transition-duration: 0.06s;
+}
+
+.key--fn:active,
+.key--fn.is-pressed {
+  background-color: var(--key-fn-active);
+}
+
+.key--op:active,
+.key--op.is-pressed {
+  background-color: var(--key-op-active);
+}
+
+.key--eq:active,
+.key--eq.is-pressed {
+  filter: brightness(0.94);
+}
+
+/* ---------- Smaller screens ---------- */
+@media (min-width: 521px) and (max-height: 780px) {
+  .display {
+    min-height: 140px;
+    padding-top: 10px;
+  }
+
+  /* Keys fill their column and only get shorter, so the card never needs scrolling */
+  .key {
+    aspect-ratio: auto;
+    height: 64px;
+    height: clamp(40px, calc((100dvh - 340px) / 5), 64px);
+    border-radius: 22px;
+  }
+}
+
+/* Phones: the calculator fills the screen */
+@media (max-width: 520px) {
+  .calc-screen {
+    place-items: stretch;
+    padding: 0;
+  }
+
+  .calc {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: calc(env(safe-area-inset-top) + 12px) 18px calc(env(safe-area-inset-bottom) + 22px);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .display {
+    flex: 1;
+    min-height: 150px;
+  }
+
+  .display__main {
+    --display-size: clamp(56px, 19vw, 84px);
+  }
+
+  /* Square keys, but shorter when browser toolbars eat into the height */
+  .key {
+    aspect-ratio: auto;
+    height: calc((100vw - 72px) / 4);
+    height: min(calc((100vw - 72px) / 4), calc((100dvh - 310px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 5));
+    border-radius: clamp(16px, 6vw, 24px);
+  }
+}
+
+/* Short landscape phones */
+@media (max-height: 540px) and (orientation: landscape) {
+  .calc-screen {
+    padding: 8px;
+  }
+
+  .calc {
+    min-height: 0;
+    padding: 8px 16px 10px;
+    border-radius: 26px;
+  }
+
+  .display {
+    flex: none;
+    min-height: 0;
+    padding: 0 8px 4px;
+  }
+
+  .display__main {
+    --display-size: 40px;
+  }
+
+  .display__history,
+  .display__preview {
+    min-height: 18px;
+    font-size: 14px;
+    line-height: 18px;
+  }
+
+  .keypad {
+    gap: 6px;
+  }
+
+  .key {
+    aspect-ratio: auto;
+    height: 40px;
+    height: clamp(26px, calc((100dvh - 186px) / 5), 64px);
+    border-radius: 14px;
+    font-size: 21px;
+  }
+
+  .key .icon {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* UnblockedTube's styles live in unblockedtube.css */
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
