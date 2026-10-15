@@ -1,17 +1,17 @@
 /*!
- * FreeTube library: Watch later, Liked videos and your own playlists, how far you got in
+ * UnblockedTube library: Watch later, Liked videos and your own playlists, how far you got in
  * each video, and backup files. It all lives in this browser's localStorage, so anything
  * read back is treated as untrusted and cleaned first.
- * Pure functions, no DOM. In the browser it's exposed as `window.FreeTubeLibrary` (load
+ * Pure functions, no DOM. In the browser it's exposed as `window.UnblockedTubeLibrary` (load
  * youtube.js first); in Node it's `module.exports` (for the tests).
  */
 (function (root, factory) {
   'use strict';
-  const YT = root && root.FreeTubeYT ? root.FreeTubeYT : typeof require === 'function' ? require('./youtube.js') : null;
+  const YT = root && root.UnblockedTubeYT ? root.UnblockedTubeYT : typeof require === 'function' ? require('./youtube.js') : null;
   if (!YT) throw new Error('library.js needs youtube.js to be loaded first');
   const api = factory(YT);
   if (typeof module === 'object' && module.exports) module.exports = api;
-  else root.FreeTubeLibrary = api;
+  else root.UnblockedTubeLibrary = api;
 })(typeof self !== 'undefined' ? self : this, function (YT) {
   'use strict';
 
@@ -27,8 +27,8 @@
   const MAX_ITEMS = 500;
   const MAX_NAME = 150;
   const MAX_PROGRESS = 300;
-  const BACKUP_APP = 'FreeTube';
-  const OLD_BACKUP_APPS = ['TubeVault']; // backups made before the rename still import
+  const BACKUP_APP = 'UnblockedTube';
+  const OLD_BACKUP_APPS = ['FreeTube', 'TubeVault']; // backups made under the old names still import
   const BACKUP_VERSION = 1;
 
   const isBuiltIn = (id) => id === WATCH_LATER || id === LIKED;

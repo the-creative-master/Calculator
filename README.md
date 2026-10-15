@@ -52,16 +52,16 @@ backups, and cleaning anything read back from storage).
 ## Project layout
 
 ```
-index.html            page markup and inline SVG icons (bump the ?v= on CSS/JS links when they change)
-css/styles.css        calculator themes, layout and animations
-css/freetube.css      FreeTube's YouTube-style look
-js/calculator.js      calculator engine (no DOM, unit tested)
-js/youtube.js         YouTube links, embed URLs, player messages (no DOM, unit tested)
-js/library.js         playlists, watch progress and backups (no DOM, unit tested)
-js/app.js             UI: keypad, keyboard, theme and FreeTube
-assets/               app icons
-assets/fonts/         Roboto (SIL Open Font License, see OFL.txt)
-tests/                node --test suites
+index.html             page markup and inline SVG icons (bump the ?v= on CSS/JS links when they change)
+css/styles.css         calculator themes, layout and animations
+css/unblockedtube.css  UnblockedTube's YouTube-style look
+js/calculator.js       calculator engine (no DOM, unit tested)
+js/youtube.js          YouTube links, embed URLs, player messages (no DOM, unit tested)
+js/library.js          playlists, watch progress and backups (no DOM, unit tested)
+js/app.js              UI: keypad, keyboard, theme and UnblockedTube
+assets/                app icons
+assets/fonts/          Roboto (SIL Open Font License, see OFL.txt)
+tests/                 node --test suites
 ```
 
 <details>
@@ -69,9 +69,9 @@ tests/                node --test suites
 
 <br>
 
-Switch to **light mode**, then press **`2`**, **`5`**, **`+`**. The calculator opens **FreeTube**.
+Switch to **light mode**, then press **`2`**, **`5`**, **`+`**. The calculator opens **UnblockedTube**.
 
-FreeTube looks and works like YouTube, but it only plays links you paste, using YouTube's
+UnblockedTube looks and works like YouTube, but it only plays links you paste, using YouTube's
 official embedded player.
 
 - **Paste a link** into the search bar (or anywhere on the page, or press `/`). Works with normal
@@ -96,7 +96,7 @@ official embedded player.
     it all as a file; *Import backup* adds a backup back in without losing what's already there.
     (Downloading the videos themselves isn't possible: the embedded player doesn't give out the
     files, and YouTube's terms don't allow it.)
-- **Full screen:** YouTube's own full-screen button, FreeTube's *Full screen* button or `F`.
+- **Full screen:** YouTube's own full-screen button, UnblockedTube's *Full screen* button or `F`.
   If the page is shown inside a frame that blocks full screen (some previews and embeds do),
   the video fills the whole window instead; `Esc` or *Exit full screen* goes back.
 - **⋮ Settings:**
@@ -109,7 +109,7 @@ official embedded player.
   window, the first `Esc` just exits that).
 
 The trigger only fires on a freshly typed `25` followed by `+`, so `125+` or `5 × 5 = +`
-won't open it. In dark mode, `25+` is just `25+`. If FreeTube ever fails to start (say, a
+won't open it. In dark mode, `25+` is just `25+`. If UnblockedTube ever fails to start (say, a
 browser mixing cached files from different versions), the calculator keeps working without it.
 
 </details>

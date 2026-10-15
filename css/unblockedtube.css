@@ -1,10 +1,10 @@
 /* ==========================================================================
-   FreeTube: a private YouTube-style player (opened from the calculator)
+   UnblockedTube: a private YouTube-style player (opened from the calculator)
    ========================================================================== */
 
 /* Roboto, as on YouTube. Latin only; other scripts fall back to system fonts. */
 @font-face {
-  font-family: "FreeTube Roboto";
+  font-family: "UnblockedTube Roboto";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
@@ -14,7 +14,7 @@
 }
 
 @font-face {
-  font-family: "FreeTube Roboto";
+  font-family: "UnblockedTube Roboto";
   font-style: normal;
   font-weight: 500;
   font-display: swap;
@@ -24,7 +24,7 @@
 }
 
 @font-face {
-  font-family: "FreeTube Roboto";
+  font-family: "UnblockedTube Roboto";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
@@ -71,7 +71,7 @@
   --yt-stack-1: #3f3f3f;
   --yt-stack-2: #2a2a2a;
   --yt-red: #ff0033;
-  --yt-font: "FreeTube Roboto", Roboto, Arial, sans-serif;
+  --yt-font: "UnblockedTube Roboto", Roboto, Arial, sans-serif;
   --yt-masthead: 56px;
 
   position: fixed;
@@ -1118,7 +1118,14 @@
   align-items: center;
   flex: none;
   height: var(--yt-masthead);
+  margin-right: -12px; /* the logo needs the menu's right padding too */
   padding-left: 4px;
+}
+
+/* Same position as the masthead logo (so it doesn't move when the menu opens), with a tighter right
+   edge so the long name, its hover background and its focus ring all fit inside the 240px menu. */
+.yt-guide__head .yt-logo {
+  padding-right: 6px;
 }
 
 .yt-guide__section {

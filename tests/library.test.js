@@ -211,14 +211,16 @@ test('backs up and restores without losing anything', () => {
 
   assert.deepEqual(Library.readBackup('{oops'), { ok: false, error: 'not-json' });
   assert.deepEqual(Library.readBackup('{"app":"Other"}'), { ok: false, error: 'not-backup' });
-  // Backups from before the rename (when it was called TubeVault) still work.
-  assert.equal(JSON.parse(file).app, 'FreeTube');
-  const oldBackup = Library.readBackup(JSON.stringify(Object.assign(JSON.parse(file), { app: 'TubeVault' })), { now: NOW });
-  assert.equal(oldBackup.ok, true);
-  assert.deepEqual(oldBackup.library, mine.library);
-  assert.deepEqual(Library.readBackup({ app: 'FreeTube', version: 99 }), { ok: false, error: 'newer' });
+  // Backups made under the old names (FreeTube, and TubeVault before that) still work.
+  assert.equal(JSON.parse(file).app, 'UnblockedTube');
+  for (const oldName of ['FreeTube', 'TubeVault']) {
+    const oldBackup = Library.readBackup(JSON.stringify(Object.assign(JSON.parse(file), { app: oldName })), { now: NOW });
+    assert.equal(oldBackup.ok, true, oldName);
+    assert.deepEqual(oldBackup.library, mine.library);
+  }
+  assert.deepEqual(Library.readBackup({ app: 'UnblockedTube', version: 99 }), { ok: false, error: 'newer' });
   assert.deepEqual(Library.readBackup(null), { ok: false, error: 'not-backup' });
-  const junk = Library.readBackup({ app: 'FreeTube', version: 1, library: 'x', history: 5, progress: [] }, { now: NOW });
+  const junk = Library.readBackup({ app: 'UnblockedTube', version: 1, library: 'x', history: 5, progress: [] }, { now: NOW });
   assert.equal(junk.ok, true);
   assert.equal(junk.library.playlists.length, 2);
   assert.deepEqual(junk.history, []);

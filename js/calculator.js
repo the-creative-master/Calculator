@@ -171,7 +171,7 @@
 
     /**
      * The number you're typing right now (raw text), or null. A result you didn't type
-     * yourself doesn't count. FreeTube uses this to check for "25".
+     * yourself doesn't count. UnblockedTube uses this to check for "25".
      */
     get entry() {
       if (this.evaluated || this.error) return null;

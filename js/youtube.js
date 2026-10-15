@@ -1,13 +1,13 @@
 /*!
- * FreeTube: YouTube link parsing, embed URLs, player messages and saved-entry cleaning.
- * Pure functions, no DOM. In the browser it's exposed as `window.FreeTubeYT`; in Node it's
+ * UnblockedTube: YouTube link parsing, embed URLs, player messages and saved-entry cleaning.
+ * Pure functions, no DOM. In the browser it's exposed as `window.UnblockedTubeYT`; in Node it's
  * `module.exports` (for the tests).
  */
 (function (root, factory) {
   'use strict';
   const api = factory();
   if (typeof module === 'object' && module.exports) module.exports = api;
-  else root.FreeTubeYT = api;
+  else root.UnblockedTubeYT = api;
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
