@@ -1,10 +1,10 @@
 /* ==========================================================================
-   TubeVault: a private YouTube-style player (opened from the calculator)
+   FreeTube: a private YouTube-style player (opened from the calculator)
    ========================================================================== */
 
 /* Roboto, as on YouTube. Latin only; other scripts fall back to system fonts. */
 @font-face {
-  font-family: "TubeVault Roboto";
+  font-family: "FreeTube Roboto";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
@@ -14,7 +14,7 @@
 }
 
 @font-face {
-  font-family: "TubeVault Roboto";
+  font-family: "FreeTube Roboto";
   font-style: normal;
   font-weight: 500;
   font-display: swap;
@@ -24,7 +24,7 @@
 }
 
 @font-face {
-  font-family: "TubeVault Roboto";
+  font-family: "FreeTube Roboto";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
@@ -71,7 +71,7 @@
   --yt-stack-1: #3f3f3f;
   --yt-stack-2: #2a2a2a;
   --yt-red: #ff0033;
-  --yt-font: "TubeVault Roboto", Roboto, Arial, sans-serif;
+  --yt-font: "FreeTube Roboto", Roboto, Arial, sans-serif;
   --yt-masthead: 56px;
 
   position: fixed;

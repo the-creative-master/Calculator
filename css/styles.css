@@ -562,7 +562,7 @@ body.is-vault-open {
   }
 }
 
-/* TubeVault's styles live in tubevault.css */
+/* FreeTube's styles live in freetube.css */
 
 /* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {

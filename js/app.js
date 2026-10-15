@@ -1,14 +1,14 @@
 /*!
- * Calculator UI, theme switching and the TubeVault easter egg.
+ * Calculator UI, theme switching and the FreeTube easter egg.
  *
- * Secret: switch to light mode, type 2 5 and press +. TubeVault opens.
+ * Secret: switch to light mode, type 2 5 and press +. FreeTube opens.
  */
 (function () {
   'use strict';
 
   const { Calculator } = window.CalcEngine;
-  const YT = window.TubeVaultYT;
-  const Library = window.TubeVaultLibrary;
+  const YT = window.FreeTubeYT;
+  const Library = window.FreeTubeLibrary;
 
   const $ = (selector) => document.querySelector(selector);
   const html = document.documentElement;
@@ -16,7 +16,7 @@
   const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
   const themeColorMeta = $('meta[name="theme-color"]');
 
-  /** The number you type in light mode right before "+" to open TubeVault. */
+  /** The number you type in light mode right before "+" to open FreeTube. */
   const SECRET_ENTRY = '25';
   const THEME_COLORS = { dark: '#0b0c0f', light: '#e9ecf1', vault: '#0f0f0f', vaultLight: '#ffffff' };
 
@@ -215,24 +215,24 @@
   render();
 
   /* ====================================================================== *
-   * TubeVault: a private player that looks like YouTube and plays YouTube's
+   * FreeTube: a private player that looks like YouTube and plays YouTube's
    * own embedded player.
    * ====================================================================== */
   /**
-   * TubeVault must never take the calculator down with it. If it can't start (say the browser
+   * FreeTube must never take the calculator down with it. If it can't start (say the browser
    * cached an old copy of one file but not the others), the calculator works without the secret.
    */
   function startVault() {
     try {
       return createVault();
     } catch (error) {
-      console.error('TubeVault could not start, so the calculator is running without it:', error);
+      console.error('FreeTube could not start, so the calculator is running without it:', error);
       return { available: false, isOpen: false, open() {}, close() {} };
     }
   }
 
   function createVault() {
-    // Check everything TubeVault needs before touching the page, so a mismatch fails cleanly here.
+    // Check everything FreeTube needs before touching the page, so a mismatch fails cleanly here.
     const YT_NEEDS = ['parse', 'embedOrigin', 'embedUrl', 'watchUrl', 'thumbnailUrl', 'formatTime', 'timeAgo', 'readPlayerMessage', 'historyKey', 'sanitizeHistory'];
     const LIBRARY_NEEDS = [
       'sanitizeLibrary', 'getPlaylist', 'customPlaylists', 'isBuiltIn', 'has', 'addItem', 'removeItem', 'restoreItem', 'moveItem',
@@ -333,10 +333,10 @@
     const toastText = find('#vault-toast-text');
     const toastAction = find('#vault-toast-action');
 
-    const RECENT_KEY = 'tubevault:recent';
-    const SETTINGS_KEY = 'tubevault:settings';
-    const LIBRARY_KEY = 'tubevault:library';
-    const PROGRESS_KEY = 'tubevault:progress';
+    const RECENT_KEY = 'freetube:recent';
+    const SETTINGS_KEY = 'freetube:settings';
+    const LIBRARY_KEY = 'freetube:library';
+    const PROGRESS_KEY = 'freetube:progress';
     const MAX_RECENT = 24;
     const SVG_NS = 'http://www.w3.org/2000/svg';
     const ERRORS = {
@@ -352,13 +352,13 @@
       100: 'This video is unavailable. It may be private or removed',
       101: "The owner doesn't allow this video to play outside YouTube",
       150: "The owner doesn't allow this video to play outside YouTube",
-      153: 'YouTube blocked the player. Open TubeVault from a web address, not a file',
+      153: 'YouTube blocked the player. Open FreeTube from a web address, not a file',
     };
     const IMPORT_ERRORS = {
-      'not-json': "That file isn't a TubeVault backup",
-      'not-backup': "That file isn't a TubeVault backup",
-      'too-big': 'That file is too big to be a TubeVault backup',
-      newer: 'That backup is from a newer TubeVault. Reload the page and try again',
+      'not-json': "That file isn't a FreeTube backup",
+      'not-backup': "That file isn't a FreeTube backup",
+      'too-big': 'That file is too big to be a FreeTube backup',
+      newer: 'That backup is from a newer FreeTube. Reload the page and try again',
     };
     const APPEARANCE_LABELS = { device: 'Device theme', dark: 'Dark', light: 'Light' };
     const FILTER_EMPTY = {
@@ -379,6 +379,7 @@
     const prefersLight = window.matchMedia('(prefers-color-scheme: light)');
     const compact = window.matchMedia('(max-width: 656px)');
 
+    migrateStorage();
     const saved = readJSON(SETTINGS_KEY, null) || {};
     const settings = {
       privacy: saved.privacy !== false,
@@ -442,9 +443,9 @@
       render();
       if (current) mount(current, false, resumePoint(current)); // back where you were, paused
 
-      // The browser/phone Back button closes TubeVault instead of leaving the page.
+      // The browser/phone Back button closes FreeTube instead of leaving the page.
       try {
-        history.pushState({ tubevault: true }, '');
+        history.pushState({ freetube: true }, '');
       } catch (error) {
         /* history not available */
       }
@@ -479,7 +480,7 @@
         root.classList.remove('is-closing');
       }, reducedMotion.matches ? 0 : 220);
 
-      if (!options.fromHistory && history.state && history.state.tubevault) {
+      if (!options.fromHistory && history.state && history.state.freetube) {
         skipNextPop = true;
         history.back();
       }
@@ -493,8 +494,8 @@
       if (isOpen) close({ fromHistory: true });
     });
 
-    // A reload while TubeVault was open leaves its history entry behind; tidy it up.
-    if (history.state && history.state.tubevault) {
+    // A reload while FreeTube was open leaves its history entry behind; tidy it up.
+    if (history.state && history.state.freetube) {
       try {
         history.replaceState(null, '');
       } catch (error) {
@@ -1436,7 +1437,7 @@
       const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
       const link = el('a');
       link.href = url;
-      link.download = `tubevault-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      link.download = `freetube-backup-${new Date().toISOString().slice(0, 10)}.json`;
       link.hidden = true;
       root.append(link);
       link.click();
@@ -2147,7 +2148,7 @@
       play(result.video);
     });
 
-    // You can also paste a link anywhere in TubeVault (but text boxes get to paste normally).
+    // You can also paste a link anywhere in FreeTube (but text boxes get to paste normally).
     document.addEventListener('paste', (event) => {
       if (!isOpen || isTextField(event.target) || isDialogOpen()) return;
       const text = event.clipboardData ? event.clipboardData.getData('text') : '';
@@ -2303,6 +2304,21 @@
         }
         area.remove();
         return copied;
+      }
+    }
+
+    /** This used to be called TubeVault: move anything saved under the old name to the new keys. */
+    function migrateStorage() {
+      try {
+        ['recent', 'settings', 'library', 'progress'].forEach((name) => {
+          const old = `tubevault:${name}`;
+          const value = localStorage.getItem(old);
+          if (value === null) return;
+          if (localStorage.getItem(`freetube:${name}`) === null) localStorage.setItem(`freetube:${name}`, value);
+          localStorage.removeItem(old);
+        });
+      } catch (error) {
+        /* storage disabled */
       }
     }
 

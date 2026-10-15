@@ -155,7 +155,7 @@ test('clear resets everything', () => {
   assert.equal(calc.entry, null);
 });
 
-test('entry is the number being typed (used for the TubeVault "25" check)', () => {
+test('entry is the number being typed (used for the FreeTube "25" check)', () => {
   assert.equal(type('25').entry, '25');
   assert.equal(type('3+25').entry, '25');
   assert.equal(type('125').entry, '125');

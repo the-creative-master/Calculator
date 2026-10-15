@@ -10,31 +10,22 @@ There are no dependencies and no build step: just HTML, CSS and plain JavaScript
 - Full keyboard support, auto-shrinking display, and a layout that fits phones, tablets and desktops
 - Can be added to your home screen (web manifest + icons) and respects reduced-motion settings
 
-## Run it locally
+## Deploy with GitHub Pages
 
-You need [Node.js](https://nodejs.org) 18 or newer. There's nothing to install.
+It's a static site with no build step, so GitHub Pages can host it as-is:
 
-```bash
-npm start
-```
+1. Merge into `main`.
+2. In the repository, open *Settings → Pages*, choose *Deploy from a branch*, pick `main` and
+   `/ (root)`, and save.
+3. After a minute or so the site is live at `https://<user>.github.io/Calculator/`.
 
-Then open <http://localhost:8080>. Use `PORT=3000 npm start` to pick another port.
+Any other static host works too (Netlify, Cloudflare Pages, Vercel…). If yours lets you set
+response headers, don't use `Referrer-Policy: no-referrer`; YouTube embeds need the default
+`strict-origin-when-cross-origin`.
 
-Any static file server works too, for example `python3 -m http.server 8080`.
-
-> **Serve it over http(s), don't double-click `index.html`.** The calculator itself works from
-> `file://`, but YouTube refuses to play embedded videos on pages that don't have a real web
-> address (you'll see *"Error 153"*).
-
-## Deploy
-
-It's a static site, so any static host works (GitHub Pages, Netlify, Cloudflare Pages, Vercel…).
-
-**GitHub Pages:** go to *Settings → Pages*, choose *Deploy from a branch*, pick `main` and `/ (root)`,
-and save. The site appears at `https://<user>.github.io/Calculator/` after a minute or so.
-
-If your host or CDN lets you set response headers, don't use `Referrer-Policy: no-referrer`;
-YouTube embeds need the default `strict-origin-when-cross-origin`.
+> **Open it from its web address, not by double-clicking `index.html`.** The calculator works
+> either way, but YouTube won't play embedded videos on a page opened from a file (you'd see
+> *"Error 153"*).
 
 ## Keyboard shortcuts
 
@@ -63,14 +54,13 @@ backups, and cleaning anything read back from storage).
 ```
 index.html            page markup and inline SVG icons (bump the ?v= on CSS/JS links when they change)
 css/styles.css        calculator themes, layout and animations
-css/tubevault.css     the vault's YouTube-style look
+css/freetube.css      FreeTube's YouTube-style look
 js/calculator.js      calculator engine (no DOM, unit tested)
 js/youtube.js         YouTube links, embed URLs, player messages (no DOM, unit tested)
 js/library.js         playlists, watch progress and backups (no DOM, unit tested)
-js/app.js             UI: keypad, keyboard, theme and the vault
+js/app.js             UI: keypad, keyboard, theme and FreeTube
 assets/               app icons
 assets/fonts/         Roboto (SIL Open Font License, see OFL.txt)
-scripts/serve.js      tiny zero-dependency static server for `npm start`
 tests/                node --test suites
 ```
 
@@ -79,9 +69,9 @@ tests/                node --test suites
 
 <br>
 
-Switch to **light mode**, then press **`2`**, **`5`**, **`+`**. The calculator opens **TubeVault**.
+Switch to **light mode**, then press **`2`**, **`5`**, **`+`**. The calculator opens **FreeTube**.
 
-TubeVault looks and works like YouTube, but it only plays links you paste, using YouTube's
+FreeTube looks and works like YouTube, but it only plays links you paste, using YouTube's
 official embedded player.
 
 - **Paste a link** into the search bar (or anywhere on the page, or press `/`). Works with normal
@@ -106,7 +96,7 @@ official embedded player.
     it all as a file; *Import backup* adds a backup back in without losing what's already there.
     (Downloading the videos themselves isn't possible: the embedded player doesn't give out the
     files, and YouTube's terms don't allow it.)
-- **Full screen:** YouTube's own full-screen button, TubeVault's *Full screen* button or `F`.
+- **Full screen:** YouTube's own full-screen button, FreeTube's *Full screen* button or `F`.
   If the page is shown inside a frame that blocks full screen (some previews and embeds do),
   the video fills the whole window instead; `Esc` or *Exit full screen* goes back.
 - **⋮ Settings:**
@@ -119,7 +109,7 @@ official embedded player.
   window, the first `Esc` just exits that).
 
 The trigger only fires on a freshly typed `25` followed by `+`, so `125+` or `5 × 5 = +`
-won't open it. In dark mode, `25+` is just `25+`. If TubeVault ever fails to start (say, a
+won't open it. In dark mode, `25+` is just `25+`. If FreeTube ever fails to start (say, a
 browser mixing cached files from different versions), the calculator keeps working without it.
 
 </details>
